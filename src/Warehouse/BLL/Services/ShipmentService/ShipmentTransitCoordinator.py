@@ -1,4 +1,5 @@
 from typing import Dict
+from src.Warehouse.BLL.Common import ShipmentStatus
 from src.Warehouse.BLL.Interfaces.ShipmentService import (
     AbstractShipmentTransitCoordinator, 
     AbstractShipmentDispatchService
@@ -33,7 +34,7 @@ class ShipmentTransitCoordinator(AbstractShipmentTransitCoordinator):
         next_stage = self.shipment_repo.get_stage_by_id(next_stage_id)
         
         # 1. Меняем статус всей родительской перевозки (Shipments) на 'На транзитном складе' (status_id = 7)
-        self.shipment_repo.update_shipment_status(next_stage["shipment_id"], status_id=7)
+        self.shipment_repo.update_shipment_status(next_stage["shipment_id"], status_id=ShipmentStatus.IN_TRANSIT_WH)
         
         has_items_to_forward = False
         
@@ -48,7 +49,7 @@ class ShipmentTransitCoordinator(AbstractShipmentTransitCoordinator):
                 has_items_to_forward = True
         
         # Переводим следующий этап из спящего режима (status_id = 5 'Ожидание') в 'Черновик' (status_id = 1)
-        self.shipment_repo.update_stage_status(next_stage_id, status_id=1)
+        self.shipment_repo.update_stage_status(next_stage_id, status_id=ShipmentStatus.DRAFT)
         
         # 3. Автоматически бронируем прибывший груз под дальнейший путь, вызывая DispatchService
         if has_items_to_forward:
