@@ -1,13 +1,14 @@
 from datetime import datetime
 from typing import List
+from src.Warehouse.BLL.Common import ShipmentStatus
 from src.Warehouse.BLL.Interfaces.ShipmentService import (
     AbstractShipmentReceiptService, 
     AbstractShipmentTransitCoordinator
 )
 
 class BusinessLogicException(Exception): pass
-class AccessDeniedException(BusinessLogicException): pass
-class EntityNotFoundException(BusinessLogicException): pass
+class AccessDeniedException(Exception): pass
+class EntityNotFoundException(Exception): pass
 
 class ShipmentReceiptService(AbstractShipmentReceiptService):
     def __init__(self, shipment_repo, employee_repo, transit_coordinator: AbstractShipmentTransitCoordinator):
@@ -32,7 +33,7 @@ class ShipmentReceiptService(AbstractShipmentReceiptService):
         Returns:
             List[dict]: Список словарей с данными о прибывающих машинах (ID этапа, дата, отправитель и др.).
         """
-        return self.shipment_repo.get_incoming_stages_by_warehouse(warehouse_id, status_id=2)
+        return self.shipment_repo.get_incoming_stages_by_warehouse(warehouse_id, status_id=ShipmentStatus.SHIPPED)
 
     def enter_actual_quantity(self, stage_id: int, product_id: int, actual_quantity: float) -> None:
         """Записывает фактически пересчитанное кладовщиком количество товара для строки этапа.
@@ -49,7 +50,7 @@ class ShipmentReceiptService(AbstractShipmentReceiptService):
             raise BusinessLogicException("Фактическое количество не может быть отрицательным.")
             
         stage = self.shipment_repo.get_stage_by_id(stage_id)
-        if stage["status_id"] != 2:
+        if stage["status_id"] != ShipmentStatus.SHIPPED:
             raise BusinessLogicException("Вносить фактическое количество можно только для грузов в пути.")
             
         self.shipment_repo.update_item_actual_quantity(stage_id, product_id, actual_quantity)
@@ -83,7 +84,7 @@ class ShipmentReceiptService(AbstractShipmentReceiptService):
                 raise BusinessLogicException(f"Заполните фактическое количество для товара ID {item['product_id']}.")
         
         has_discrepancies = any(item["actual_quantity"] != item["document_quantity"] for item in stage_items)
-        final_status = 6 if has_discrepancies else 3 # 6 = Принято с расхождениями, 3 = Принято без расхождений
+        final_status = ShipmentStatus.DISCREPANCY if has_discrepancies else ShipmentStatus.RECEIVED
         
         self.shipment_repo.complete_stage(
             stage_id=stage_id, 
@@ -101,5 +102,5 @@ class ShipmentReceiptService(AbstractShipmentReceiptService):
             accepted_items = {item["product_id"]: float(item["actual_quantity"]) for item in stage_items}
             self.transit_coordinator.move_to_next_stage(stage_id, next_stage["id"], accepted_items)
         else:
-            final_shipment_status = 6 if has_discrepancies else 3
+            final_shipment_status = ShipmentStatus.DISCREPANCY if has_discrepancies else ShipmentStatus.RECEIVED
             self.shipment_repo.update_shipment_status(stage["shipment_id"], status_id=final_shipment_status)
