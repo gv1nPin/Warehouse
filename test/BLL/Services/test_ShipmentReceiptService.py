@@ -1,3 +1,4 @@
+from unittest.mock import ANY
 import pytest
 from datetime import datetime
 from unittest.mock import Mock, patch
@@ -106,7 +107,7 @@ class TestAcceptStage:
         ]
         fixed_now = datetime(2026, 9, 10, 12, 0, 0)
 
-        with patch("your_module.datetime") as mock_datetime:  # Подменяем datetime для проверки даты
+        with patch("src.Warehouse.BLL.Services.ShipmentService.ShipmentReceiptService.datetime") as mock_datetime:  # Подменяем datetime для проверки даты
             mock_datetime.now.return_value = fixed_now
 
             # Act
@@ -131,7 +132,7 @@ class TestAcceptStage:
 
         # Assert
         mock_shipment_repo.complete_stage.assert_called_once_with(
-            stage_id=100, status_id=ShipmentStatus.DISCREPANCY, acceptor_id=7, received_at=pytest.any(datetime)
+            stage_id=100, status_id=ShipmentStatus.DISCREPANCY, acceptor_id=7, received_at=ANY
         )
         mock_shipment_repo.update_shipment_status.assert_called_once_with(42, status_id=ShipmentStatus.DISCREPANCY)
 
