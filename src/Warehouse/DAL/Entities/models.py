@@ -9,7 +9,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 class Base(DeclarativeBase):
     pass
 
-# Промежуточная таблица для Many-to-Many (M2M)
+
 class RolePermission(Base):
     __tablename__ = "RolePermissions"
     
