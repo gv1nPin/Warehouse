@@ -3,8 +3,7 @@ from Warehouse.DAL.Database import session_factory
 
 from Warehouse.DAL.UnitOfWork import UnitOfWork
 
-# Импортируем сервисы бизнес-логики BLL
-from Warehouse.BLL.Services.AuthService import AuthService # <-- ДОБАВЛЕНО
+from Warehouse.BLL.Services.AuthService.AuthService import AuthService
 from Warehouse.BLL.Services.ShipmentService.ShipmentDispatchService import ShipmentDispatchService
 from Warehouse.BLL.Services.ShipmentService.ShipmentTransitCoordinator import ShipmentTransitCoordinator
 from Warehouse.BLL.Services.ShipmentService.ShipmentReceiptService import ShipmentReceiptService
