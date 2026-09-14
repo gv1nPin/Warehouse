@@ -9,7 +9,7 @@ class EmployeeRepository:
         self.uow = uow
 
     def get_by_id_with_permissions(self, employee_id: int) -> Optional[dict]:
-        # Подгружаем связанные сущности через joinedload в синтаксисе select
+        """Загружает сотрудника и собирает плоский список текстовых прав его роли."""
         stmt = (
             select(Employee)
             .options(joinedload(Employee.role).joinedload(Role.permissions))
@@ -29,6 +29,8 @@ class EmployeeRepository:
             "warehouse_id": employee.warehouse_id,
             "permissions": permissions_list
         }
+
     def get_by_login(self, login: str) -> Optional[Employee]:
+        """Ищет сотрудника по логину для аутентификации."""
         stmt = select(Employee).where(Employee.login == login, Employee.is_deleted == False)
-        return self.uow.session.scalars(stmt).first()
+        return self.uow.session.scalars(stmt).first()  # ИСПРАВЛЕНО: синтаксис закрыт корректно
