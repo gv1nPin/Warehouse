@@ -1,4 +1,3 @@
-# src/Warehouse/BLL/Services/ShipmentService/ShipmentTransitCoordinator.py
 from typing import Dict
 from src.Warehouse.BLL.Common import ShipmentStatus
 from src.Warehouse.BLL.Interfaces.ShipmentService import (

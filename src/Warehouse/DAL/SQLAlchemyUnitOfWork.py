@@ -1,9 +1,6 @@
-# src/Warehouse/DAL/SQLAlchemyUnitOfWork.py
 from typing import Optional, TYPE_CHECKING
 from sqlalchemy.orm import Session
 
-# Исправлено: Импортируем классы для типов ТОЛЬКО во время статического анализа.
-# Этот блок никогда не выполняется в рантайме, что полностью исключает циклические импорты.
 if TYPE_CHECKING:
     from src.Warehouse.DAL.Repositories.DispatchRepository import DispatchRepository
     from src.Warehouse.DAL.Repositories.EmployeeRepository import EmployeeRepository
@@ -16,7 +13,7 @@ class SQLAlchemyUnitOfWork:
         self.session_factory = session_factory
         self._session: Optional[Session] = None
         
-        # Объявляем публичные свойства репозиториев (в кавычках, так как они под TYPE_CHECKING)
+        # Объявляем публичные свойства репозиториев
         self.dispatch: Optional["DispatchRepository"] = None
         self.employee: Optional["EmployeeRepository"] = None
         self.receipt: Optional["ReceiptRepository"] = None
@@ -31,8 +28,7 @@ class SQLAlchemyUnitOfWork:
     def __enter__(self):
         self._session = self.session_factory()
         
-        # Исправлено: Локальный импорт классов репозиториев в рантайме.
-        # Они загружаются только тогда, когда сессия уже открыта.
+        # Локальный импорт классов репозиториев в рантайме для исключения циклических зависимостей
         from src.Warehouse.DAL.Repositories.DispatchRepository import DispatchRepository
         from src.Warehouse.DAL.Repositories.EmployeeRepository import EmployeeRepository
         from src.Warehouse.DAL.Repositories.ReceiptRepository import ReceiptRepository

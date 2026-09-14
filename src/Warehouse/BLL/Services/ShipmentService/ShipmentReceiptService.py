@@ -11,85 +11,52 @@ class AccessDeniedException(Exception): pass
 class EntityNotFoundException(Exception): pass
 
 class ShipmentReceiptService(AbstractShipmentReceiptService):
-    def __init__(self, uow, shipment_repo, employee_repo, transit_coordinator: AbstractShipmentTransitCoordinator):
+    def __init__(self, uow, transit_coordinator: AbstractShipmentTransitCoordinator):
         """Инициализирует сервис управления приёмкой грузов.
 
         Args:
-            shipment_repo: Репозиторий из слоя DAL для работы с перевозками и этапами.
-            employee_repo: Репозиторий из слоя DAL для работы с сотрудниками.
-            transit_coordinator (AbstractShipmentTransitCoordinator): Абстрактная зависимость 
-                                                                     координатора транзита.
+            uow: Универсальный Unit of Work (дает доступ к репозиториям и сессии).
+            transit_coordinator (AbstractShipmentTransitCoordinator): Зависимость от координатора транзита.
         """
         self.uow = uow
-        self.shipment_repo = shipment_repo
-        self.employee_repo = employee_repo
-        self.transit_coordinator = transit_coordinator  # Зависимость от абстрактного координатора
+        self.transit_coordinator = transit_coordinator
 
     def get_incoming_stages(self, warehouse_id: int) -> List[dict]:
-        """Возвращает список всех этапов перевозок, которые сейчас находятся в пути к указанному складу.
-
-        Args:
-            warehouse_id (int): Идентификатор целевого склада (Warehouses).
-
-        Returns:
-            List[dict]: Список словарей с данными о прибывающих машинах (ID этапа, дата, отправитель и др.).
-        """
-        return self.shipment_repo.get_incoming_stages_by_warehouse(warehouse_id, status_id=ShipmentStatus.SHIPPED)
+        # Чтение выполняется вне транзакции, берем репозиторий через сессию по умолчанию или открываем транзакцию
+        with self.uow:
+            return self.uow.receipt.get_incoming_stages_by_warehouse(warehouse_id, status_id=ShipmentStatus.SHIPPED)
 
     def enter_actual_quantity(self, stage_id: int, product_id: int, actual_quantity: float) -> None:
-        """Записывает фактически пересчитанное кладовщиком количество товара для строки этапа.
-
-        Args:
-            stage_id (int): Идентификатор текущего этапа перевозки (ShipmentStages).
-            product_id (int): Идентификатор проверяемого товара (Products).
-            actual_quantity (float): Фактически обнаруженное физическое количество товара.
-
-        Raises:
-            BusinessLogicException: Если количество отрицательное или этап находится не в статусе 'Отправлено'.
-        """
         if actual_quantity < 0:
             raise BusinessLogicException("Фактическое количество не может быть отрицательным.")
             
-        with self.uow:  # Обернуто в транзакцию
-            stage = self.shipment_repo.get_stage_by_id(stage_id)
+        with self.uow:  
+            stage = self.uow.receipt.get_stage_by_id(stage_id)
             if not stage:
                 raise EntityNotFoundException("Этап не найден.")
             if stage["status_id"] != ShipmentStatus.SHIPPED:
                 raise BusinessLogicException("Вносить фактическое количество можно только для грузов в пути.")
                 
-            self.shipment_repo.update_item_actual_quantity(stage_id, product_id, actual_quantity)
+            self.uow.receipt.update_item_actual_quantity(stage_id, product_id, actual_quantity)
 
     def accept_stage(self, stage_id: int, employee_id: int) -> None:
-        """Финально закрывает этап приёмки груза на складе, проверяет расхождения 
-        и запускает автоматический транзит к следующему узлу, если маршрут не окончен.
-
-        Args:
-            stage_id (int): Идентификатор закрываемого этапа (ShipmentStages).
-            employee_id (int): Идентификатор принимающего сотрудника (Employees).
-
-        Raises:
-            EntityNotFoundException: Если этап или сотрудник приёмки не найдены в системе.
-            AccessDeniedException: Если склад сотрудника не совпадает со складом назначения этапа.
-            BusinessLogicException: Если у товаров остались незаполненные поля фактического количества (NULL).
-        """      
-        with self.uow:  # Вся цепочка закрытия и транзита теперь атомарна
-            stage = self.shipment_repo.get_stage_by_id(stage_id)
+        with self.uow:  
+            stage = self.uow.receipt.get_stage_by_id(stage_id)
             if not stage:
                 raise EntityNotFoundException("Этап не найден.")
                 
-            # Запрашиваем сотрудника вместе с его правами (из связующей таблицы Permissions)
-            employee = self.employee_repo.get_by_id_with_permissions(employee_id)
+            # Запрашиваем сотрудника через свойство uow.employee
+            employee = self.uow.employee.get_by_id_with_permissions(employee_id)
             if not employee:
                 raise EntityNotFoundException("Сотрудник приёмки не найден.")
                 
-            # Проверка атомарного права RBAC перед выполнением действия
             if "shipment:accept" not in employee.get("permissions", []):
                 raise AccessDeniedException("У вашей роли нет прав на приемку грузов.")
                 
             if employee["warehouse_id"] != stage["to_warehouse_id"]:
                 raise AccessDeniedException("Вы не можете принять груз, направленный на чужой склад.")
             
-            stage_items = self.shipment_repo.get_stage_items(stage_id)
+            stage_items = self.uow.receipt.get_stage_items(stage_id)
             for item in stage_items:
                 if item["actual_quantity"] is None:
                     raise BusinessLogicException(f"Заполните фактическое количество для товара ID {item['product_id']}.")
@@ -97,22 +64,22 @@ class ShipmentReceiptService(AbstractShipmentReceiptService):
             has_discrepancies = any(float(item["actual_quantity"]) != float(item["document_quantity"]) for item in stage_items)
             final_status = ShipmentStatus.DISCREPANCY if has_discrepancies else ShipmentStatus.RECEIVED
             
-            self.shipment_repo.complete_stage(
+            self.uow.receipt.complete_stage(
                 stage_id=stage_id, 
                 status_id=final_status, 
                 acceptor_id=employee_id, 
                 received_at=datetime.now(timezone.utc)
             )
 
-            next_stage = self.shipment_repo.get_stage_by_order(
+            next_stage = self.uow.receipt.get_stage_by_order(
                 shipment_id=stage["shipment_id"], 
                 stage_order=stage["stage_order"] + 1
             )
             
             if next_stage:
                 accepted_items = {item["product_id"]: float(item["actual_quantity"]) for item in stage_items}
-                # Вызываем координатор. Он автоматически отработает внутри этой же транзакции
+                # Передаем управление координатору транзита в рамках ТЕКУЩЕЙ транзакции UOW
                 self.transit_coordinator.move_to_next_stage(stage_id, next_stage["id"], accepted_items)
             else:
                 final_shipment_status = ShipmentStatus.DISCREPANCY if has_discrepancies else ShipmentStatus.RECEIVED
-                self.shipment_repo.update_shipment_status(stage["shipment_id"], status_id=final_shipment_status)
+                self.uow.receipt.update_shipment_status(stage["shipment_id"], status_id=final_shipment_status)
