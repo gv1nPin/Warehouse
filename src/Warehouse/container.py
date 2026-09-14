@@ -1,10 +1,9 @@
-# src/Warehouse/container.py
 from dependency_injector import containers, providers
-from src.Warehouse.DAL.database import session_factory
-from src.Warehouse.DAL.SQLAlchemyUnitOfWork import SQLAlchemyUnitOfWork
-from src.Warehouse.BLL.Services.ShipmentService.ShipmentDispatchService import ShipmentDispatchService
-from src.Warehouse.BLL.Services.ShipmentService.ShipmentTransitCoordinator import ShipmentTransitCoordinator
-from src.Warehouse.BLL.Services.ShipmentService.ShipmentReceiptService import ShipmentReceiptService
+from Warehouse.DAL.database import session_factory
+from Warehouse.DAL.SQLAlchemyUnitOfWork import SQLAlchemyUnitOfWork
+from Warehouse.BLL.Services.ShipmentService.ShipmentDispatchService import ShipmentDispatchService
+from Warehouse.BLL.Services.ShipmentService.ShipmentTransitCoordinator import ShipmentTransitCoordinator
+from Warehouse.BLL.Services.ShipmentService.ShipmentReceiptService import ShipmentReceiptService
 
 class Container(containers.DeclarativeContainer):
     # Контейнер автоматически подтянет правильный путь к плагинам
