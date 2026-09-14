@@ -1,5 +1,5 @@
 from Warehouse.DAL.Database import session_factory
-from Warehouse.container import Container
+from container import Container
 
 def main():
     # Инициализируем контейнер для проверки
