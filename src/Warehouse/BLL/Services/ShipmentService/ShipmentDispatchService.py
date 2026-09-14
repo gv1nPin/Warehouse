@@ -7,10 +7,10 @@ from src.Warehouse.BLL.Common import ShipmentStatus
 class BusinessLogicException(Exception): pass
 class InsufficientStockException(Exception): pass
 class EntityNotFoundException(Exception): pass
-
+class AccessDeniedException(Exception): pass
 
 class ShipmentDispatchService(AbstractShipmentDispatchService):
-    def __init__(self, shipment_repo, stock_repo, employee_repo):
+    def __init__(self, uow, shipment_repo, stock_repo, employee_repo):
         """Инициализирует сервис управления отправкой грузов и планирования маршрутов.
 
         Args:
@@ -18,6 +18,7 @@ class ShipmentDispatchService(AbstractShipmentDispatchService):
             stock_repo: Репозиторий из слоя DAL для контроля остатков и резервирования.
             employee_repo: Репозиторий из слоя DAL для работы с сотрудниками.
         """
+        self.uow = uow
         self.shipment_repo = shipment_repo
         self.stock_repo = stock_repo
         self.employee_repo = employee_repo
@@ -43,31 +44,37 @@ class ShipmentDispatchService(AbstractShipmentDispatchService):
         if len(route_warehouses) < 2:
             raise BusinessLogicException("Маршрут должен содержать как минимум склад-отправитель и склад-получатель.")
         
-        creator = self.employee_repo.get_by_id(creator_id)
-        if not creator:
-            raise EntityNotFoundException("Сотрудник-создатель не найден.")
-        
-        shipment_id = self.shipment_repo.create_shipment(
-            status_id=ShipmentStatus.DRAFT, 
-            creator_id=creator_id, 
-            planned_date=planned_date
-        )
-        
-        for i in range(len(route_warehouses) - 1):
-            from_wh = route_warehouses[i]
-            to_wh = route_warehouses[i + 1]
-            stage_order = i + 1
-            initial_stage_status = ShipmentStatus.DRAFT if stage_order == 1 else ShipmentStatus.IN_WAITING 
+        with self.uow:  #Обернуто в транзакцию
+            #Загружаем сотрудника вместе со списком текстовых прав RBAC
+            creator = self.employee_repo.get_by_id_with_permissions(creator_id)
+            if not creator:
+                raise EntityNotFoundException("Сотрудник-создатель не найден.")
+                
+            #Контроль прав доступа на создание документов
+            if "shipment:create" not in creator.get("permissions", []):
+                raise AccessDeniedException("У вашей роли нет прав на создание перевозок.")
             
-            self.shipment_repo.create_stage(
-                shipment_id=shipment_id,
-                stage_order=stage_order,
-                from_warehouse_id=from_wh,
-                to_warehouse_id=to_wh,
-                status_id=initial_stage_status
+            shipment_id = self.shipment_repo.create_shipment(
+                status_id=ShipmentStatus.DRAFT, 
+                creator_id=creator_id, 
+                planned_date=planned_date
             )
             
-        return shipment_id
+            for i in range(len(route_warehouses) - 1):
+                from_wh = route_warehouses[i]
+                to_wh = route_warehouses[i + 1]
+                stage_order = i + 1
+                initial_stage_status = ShipmentStatus.DRAFT if stage_order == 1 else ShipmentStatus.IN_WAITING 
+                
+                self.shipment_repo.create_stage(
+                    shipment_id=shipment_id,
+                    stage_order=stage_order,
+                    from_warehouse_id=from_wh,
+                    to_warehouse_id=to_wh,
+                    status_id=initial_stage_status
+                )
+                
+            return shipment_id
 
     def add_item_to_stage(self, stage_id: int, product_id: int, document_quantity: float) -> None:
         """Добавляет товарную позицию в состав конкретного этапа перевозки (StageItems). 
@@ -86,23 +93,28 @@ class ShipmentDispatchService(AbstractShipmentDispatchService):
         if document_quantity <= 0:
             raise BusinessLogicException("Количество должно быть больше нуля.")
         
-        stage = self.shipment_repo.get_stage_by_id(stage_id)
-        if not stage:
-            raise EntityNotFoundException("Указанный этап перевозки не найден.")
+        with self.uow:
+            stage = self.shipment_repo.get_stage_by_id(stage_id)
+            if not stage:
+                raise EntityNotFoundException("Указанный этап перевозки не найден.")
+                
+            if stage["status_id"] != ShipmentStatus.DRAFT:
+                raise BusinessLogicException("Добавление товаров разрешено только в статусе 'Черновик'.")
             
-        if stage["status_id"] != ShipmentStatus.DRAFT:
-            raise BusinessLogicException("Добавление товаров разрешено только в статусе 'Черновик'.")
-        
-        stock = self.stock_repo.get_balance(stage["from_warehouse_id"], product_id)
-        quantity = stock["quantity"] if stock else 0.0
-        reserved_quantity = stock["reserved_quantity"] if stock else 0.0
-        
-        if (quantity - reserved_quantity) < document_quantity:
-            raise InsufficientStockException(
-                f"Недостаточно свободного товара для резерва. Доступно: {quantity - reserved_quantity}"
-            )
-        
-        self.shipment_repo.add_item_to_stage(stage_id, product_id, document_quantity)
+            #метод заменен на get_balance_for_update.
+            #Внутри репозитория он обязан вызывать SQLAlchemy метод .with_for_update(), 
+            #чтобы заблокировать строку в PostgreSQL и защитить систему от Race Condition.
+            stock = self.stock_repo.get_balance_for_update(stage["from_warehouse_id"], product_id)
+            quantity = float(stock["quantity"]) if stock else 0.0
+            reserved_quantity = float(stock["reserved_quantity"]) if stock else 0.0
+            
+            if (quantity - reserved_quantity) < document_quantity:
+                raise InsufficientStockException(
+                    f"Недостаточно свободного товара для резерва. Доступно: {quantity - reserved_quantity}"
+                )
+            
+            self.shipment_repo.add_item_to_stage(stage_id, product_id, document_quantity)
+
 
     def reserve_stage_items(self, stage_id: int) -> None:
         """Переводит добавленные в накладную товары текущего этапа из свободного остатка в резерв 
@@ -115,22 +127,25 @@ class ShipmentDispatchService(AbstractShipmentDispatchService):
             EntityNotFoundException: Если указанный этап перевозки не найден.
             BusinessLogicException: Если в этапе отсутствуют добавленные товары (пустой груз).
         """
-        stage = self.shipment_repo.get_stage_by_id(stage_id)
-        if not stage:
-            raise EntityNotFoundException("Этап не найден.")
-            
-        items = self.shipment_repo.get_stage_items(stage_id)
-        if not items:
-            raise BusinessLogicException("Невозможно зарезервировать пустой этап.")
-            
-        for item in items:
-            self.stock_repo.increase_reservation(
-                warehouse_id=stage["from_warehouse_id"], 
-                product_id=item["product_id"], 
-                amount=item["document_quantity"]
-            )
-            
-        self.shipment_repo.update_stage_status(stage_id, status_id=ShipmentStatus.RESERVED)
+        with self.uow:  # Обернуто в транзакцию
+            stage = self.shipment_repo.get_stage_by_id(stage_id)
+            if not stage:
+                raise EntityNotFoundException("Этап не найден.")
+                
+            items = self.shipment_repo.get_stage_items(stage_id)
+            if not items:
+                raise BusinessLogicException("Невозможно зарезервировать пустой этап.")
+                
+            for item in items:
+                # В репозитории увеличение резерва также должно происходить с блокировкой FOR UPDATE
+                self.stock_repo.increase_reservation(
+                    warehouse_id=stage["from_warehouse_id"], 
+                    product_id=item["product_id"], 
+                    amount=float(item["document_quantity"])  # приведение к float
+                )
+                
+            self.shipment_repo.update_stage_status(stage_id, status_id=ShipmentStatus.RESERVED)
+
 
     def ship_stage(self, stage_id: int) -> None:
         """Фиксирует физический выезд машины со склада отправления. Устанавливает статус 
@@ -143,11 +158,15 @@ class ShipmentDispatchService(AbstractShipmentDispatchService):
             EntityNotFoundException: Если указанный этап перевозки не найден.
             BusinessLogicException: Если этап не был предварительно переведен в статус 'Зарезервировано'.
         """
-        stage = self.shipment_repo.get_stage_by_id(stage_id)
-        if not stage:
-            raise EntityNotFoundException("Этап не найден.")
-            
-        if stage["status_id"] != ShipmentStatus.RESERVED:
-            raise BusinessLogicException("Разрешено отправлять только зарезервированные этапы грузов.")
-            
-        self.shipment_repo.mark_stage_as_shipped(stage_id, sent_at=datetime.now())
+        from datetime import timezone
+        
+        with self.uow:  # Исправлено: Обернуто в транзакцию
+            stage = self.shipment_repo.get_stage_by_id(stage_id)
+            if not stage:
+                raise EntityNotFoundException("Этап не найден.")
+                
+            if stage["status_id"] != ShipmentStatus.RESERVED:
+                raise BusinessLogicException("Разрешено отправлять только зарезервированные этапы грузов.")
+                
+            # Исправлено: Передаем время в формате UTC для корректной записи в Postgres TIMESTAMPTZ
+            self.shipment_repo.mark_stage_as_shipped(stage_id, sent_at=datetime.now(timezone.utc))
