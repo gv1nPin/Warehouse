@@ -25,6 +25,8 @@ class Employee(Base):
     id: Mapped[int] = mapped_column(Identity(), primary_key=True)
     first_name: Mapped[str] = mapped_column(Text)
     last_name: Mapped[str] = mapped_column(Text)
+    login: Mapped[str] = mapped_column(Text, unique=True)
+    password_hash: Mapped[str] = mapped_column(Text)
     warehouse_id: Mapped[int] = mapped_column(ForeignKey("Warehouses.id"), index=True)
     role_id: Mapped[int] = mapped_column(ForeignKey("Roles.id"), index=True)
     is_deleted: Mapped[bool] = mapped_column(default=False, server_default=false())

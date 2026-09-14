@@ -41,6 +41,7 @@ class ShipmentStage(Base):
     from_warehouse_id: Mapped[int] = mapped_column(ForeignKey("Warehouses.id"), index=True)
     to_warehouse_id: Mapped[int] = mapped_column(ForeignKey("Warehouses.id"), index=True)
     acceptor_id: Mapped[int | None] = mapped_column(ForeignKey("Employees.id"), index=True)
+    driver_id: Mapped[int | None] = mapped_column(ForeignKey("Employees.id"), index=True)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     received_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
@@ -48,7 +49,8 @@ class ShipmentStage(Base):
     status: Mapped["Status"] = relationship()
     from_warehouse: Mapped["Warehouse"] = relationship(foreign_keys=[from_warehouse_id])
     to_warehouse: Mapped["Warehouse"] = relationship(foreign_keys=[to_warehouse_id])
-    acceptor: Mapped["Employee | None"] = relationship()
+    acceptor: Mapped["Employee | None"] = relationship(foreign_keys=[acceptor_id])
+    driver: Mapped["Employee | None"] = relationship(foreign_keys=[driver_id])
     items: Mapped[list["StageItem"]] = relationship(
         back_populates="stage", cascade="all, delete-orphan", passive_deletes=True
     )
