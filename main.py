@@ -1,7 +1,5 @@
 from src.Warehouse.DAL.Session import session_factory
 from src.Warehouse.DAL.SQLAlchemyUnitOfWork import SQLAlchemyUnitOfWork
-# Предположим, у вас есть сервис в слое BLL
-# from src.Warehouse_BLL.Services.DispatchService import DispatchService 
 
 def main():
     # 1. Инициализируем Unit of Work, передавая ему фабрику сессий
