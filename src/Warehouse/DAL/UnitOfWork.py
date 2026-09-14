@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from Warehouse.DAL.Repositories.TransitRepository import TransitRepository
 
 
-class SQLAlchemyUnitOfWork:
+class UnitOfWork:
     def __init__(self, session_factory):
         self.session_factory = session_factory
         self._session: Optional[Session] = None

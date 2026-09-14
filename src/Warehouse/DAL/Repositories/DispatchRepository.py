@@ -2,10 +2,10 @@ from datetime import date, datetime, timezone
 from typing import List, Optional
 from sqlalchemy import select
 from Warehouse.DAL.Entities.Shipments import Shipment, ShipmentStage, StageItem, StockOnWarehouse
-from Warehouse.DAL.SQLAlchemyUnitOfWork import SQLAlchemyUnitOfWork
+from Warehouse.DAL.UnitOfWork import UnitOfWork
 
 class DispatchRepository:
-    def __init__(self, uow: SQLAlchemyUnitOfWork):
+    def __init__(self, uow: UnitOfWork):
         self.uow = uow
 
     def create_shipment(self, status_id: int, creator_id: int, planned_date: date) -> int:

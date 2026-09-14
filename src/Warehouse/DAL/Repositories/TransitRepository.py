@@ -1,10 +1,10 @@
 from typing import Optional
 from sqlalchemy import select, update
 from Warehouse.DAL.Entities.Shipments import Shipment, ShipmentStage, StageItem
-from Warehouse.DAL.SQLAlchemyUnitOfWork import SQLAlchemyUnitOfWork
+from Warehouse.DAL.UnitOfWork import UnitOfWork
 
 class TransitRepository:
-    def __init__(self, uow: SQLAlchemyUnitOfWork):
+    def __init__(self, uow: UnitOfWork):
         self.uow = uow
 
     def get_stage_by_id(self, stage_id: int) -> Optional[dict]:

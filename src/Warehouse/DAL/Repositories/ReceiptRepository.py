@@ -2,10 +2,10 @@ from datetime import datetime
 from typing import List, Optional
 from sqlalchemy import select
 from Warehouse.DAL.Entities.Shipments import Shipment, ShipmentStage, StageItem
-from Warehouse.DAL.SQLAlchemyUnitOfWork import SQLAlchemyUnitOfWork
+from Warehouse.DAL.UnitOfWork import UnitOfWork
 
 class ReceiptRepository:
-    def __init__(self, uow: SQLAlchemyUnitOfWork):
+    def __init__(self, uow: UnitOfWork):
         self.uow = uow
 
     def get_incoming_stages_by_warehouse(self, warehouse_id: int, status_id: int) -> List[dict]:
