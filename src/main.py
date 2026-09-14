@@ -1,4 +1,4 @@
-from Warehouse.DAL.database import session_factory
+from Warehouse.DAL.Database import session_factory
 from Warehouse.container import Container
 
 def main():
