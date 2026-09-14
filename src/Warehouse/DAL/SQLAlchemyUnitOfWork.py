@@ -1,8 +1,14 @@
-# src/Warehouse.DAL/SQLAlchemyUnitOfWork.py
+# src/Warehouse/DAL/SQLAlchemyUnitOfWork.py
 from typing import Optional, TYPE_CHECKING
 from sqlalchemy.orm import Session
-from src.Warehouse.DAL.Repositories import DispatchRepository, EmployeeRepository, ReceiptRepository, TransitRepository
 
+# Исправлено: Импортируем классы для типов ТОЛЬКО во время статического анализа.
+# Этот блок никогда не выполняется в рантайме, что полностью исключает циклические импорты.
+if TYPE_CHECKING:
+    from src.Warehouse.DAL.Repositories.DispatchRepository import DispatchRepository
+    from src.Warehouse.DAL.Repositories.EmployeeRepository import EmployeeRepository
+    from src.Warehouse.DAL.Repositories.ReceiptRepository import ReceiptRepository
+    from src.Warehouse.DAL.Repositories.TransitRepository import TransitRepository
 
 
 class SQLAlchemyUnitOfWork:
@@ -10,7 +16,7 @@ class SQLAlchemyUnitOfWork:
         self.session_factory = session_factory
         self._session: Optional[Session] = None
         
-        # Объявляем публичные свойства репозиториев
+        # Объявляем публичные свойства репозиториев (в кавычках, так как они под TYPE_CHECKING)
         self.dispatch: Optional["DispatchRepository"] = None
         self.employee: Optional["EmployeeRepository"] = None
         self.receipt: Optional["ReceiptRepository"] = None
@@ -25,7 +31,14 @@ class SQLAlchemyUnitOfWork:
     def __enter__(self):
         self._session = self.session_factory()
         
-        # Инициализируем репозитории и передаем им текущий UOW
+        # Исправлено: Локальный импорт классов репозиториев в рантайме.
+        # Они загружаются только тогда, когда сессия уже открыта.
+        from src.Warehouse.DAL.Repositories.DispatchRepository import DispatchRepository
+        from src.Warehouse.DAL.Repositories.EmployeeRepository import EmployeeRepository
+        from src.Warehouse.DAL.Repositories.ReceiptRepository import ReceiptRepository
+        from src.Warehouse.DAL.Repositories.TransitRepository import TransitRepository
+        
+        # Инициализируем репозитории и передаем им текущий экземпляр UOW
         self.dispatch = DispatchRepository(self)
         self.employee = EmployeeRepository(self)
         self.receipt = ReceiptRepository(self)

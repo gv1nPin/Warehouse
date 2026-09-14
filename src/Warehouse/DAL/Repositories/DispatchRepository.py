@@ -1,8 +1,8 @@
 from datetime import date, datetime, timezone
 from typing import List, Optional
 from sqlalchemy import select
-from src.DAL.Entities.models import Shipment, ShipmentStage, StageItem, StockOnWarehouse
-from src.DAL.SQLAlchemyUnitOfWork import SQLAlchemyUnitOfWork
+from src.Warehouse.DAL.Entities.models import Shipment, ShipmentStage, StageItem, StockOnWarehouse
+from src.Warehouse.DAL.SQLAlchemyUnitOfWork import SQLAlchemyUnitOfWork
 
 class DispatchRepository:
     def __init__(self, uow: SQLAlchemyUnitOfWork):
@@ -37,10 +37,10 @@ class DispatchRepository:
 
     def get_balance_for_update(self, warehouse_id: int, product_id: int) -> Optional[StockOnWarehouse]:
         # ВАЖНО: Возвращаем сам ОБЪЕКТ МОДЕЛИ с блокировкой строки в БД. 
-        # Если вернуть dict, связь с транзакцией разорвется.
+        # Указаны точные имена полей из ORM-модели: Warehouse_id и Product_id
         stmt = (
             select(StockOnWarehouse)
-            .where(StockOnWarehouse.warehouse_id == warehouse_id, StockOnWarehouse.product_id == product_id)
+            .where(StockOnWarehouse.Warehouse_id == warehouse_id, StockOnWarehouse.Product_id == product_id)
             .with_for_update()
         )
         return self.uow.session.scalars(stmt).first()

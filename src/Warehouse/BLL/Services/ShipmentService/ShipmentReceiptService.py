@@ -50,7 +50,7 @@ class ShipmentReceiptService(AbstractShipmentReceiptService):
         if actual_quantity < 0:
             raise BusinessLogicException("Фактическое количество не может быть отрицательным.")
             
-        with self.uow:  # Исправлено: Обернуто в транзакцию
+        with self.uow:  # Обернуто в транзакцию
             stage = self.shipment_repo.get_stage_by_id(stage_id)
             if not stage:
                 raise EntityNotFoundException("Этап не найден.")
@@ -72,17 +72,17 @@ class ShipmentReceiptService(AbstractShipmentReceiptService):
             AccessDeniedException: Если склад сотрудника не совпадает со складом назначения этапа.
             BusinessLogicException: Если у товаров остались незаполненные поля фактического количества (NULL).
         """      
-        with self.uow:  # Исправлено: Вся цепочка закрытия и транзита теперь атомарна
+        with self.uow:  # Вся цепочка закрытия и транзита теперь атомарна
             stage = self.shipment_repo.get_stage_by_id(stage_id)
             if not stage:
                 raise EntityNotFoundException("Этап не найден.")
                 
-            # Исправлено: Запрашиваем сотрудника вместе с его правами (из связующей таблицы Permissions)
+            # Запрашиваем сотрудника вместе с его правами (из связующей таблицы Permissions)
             employee = self.employee_repo.get_by_id_with_permissions(employee_id)
             if not employee:
                 raise EntityNotFoundException("Сотрудник приёмки не найден.")
                 
-            # Исправлено: Проверка атомарного права RBAC перед выполнением действия
+            # Проверка атомарного права RBAC перед выполнением действия
             if "shipment:accept" not in employee.get("permissions", []):
                 raise AccessDeniedException("У вашей роли нет прав на приемку грузов.")
                 
