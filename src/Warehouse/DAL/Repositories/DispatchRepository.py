@@ -36,11 +36,10 @@ class DispatchRepository:
         }
 
     def get_balance_for_update(self, warehouse_id: int, product_id: int) -> Optional[StockOnWarehouse]:
-        # ВАЖНО: Возвращаем сам ОБЪЕКТ МОДЕЛИ с блокировкой строки в БД. 
-        # Указаны точные имена полей из ORM-модели: Warehouse_id и Product_id
+        # Свойства модели теперь пишутся в нижнем регистре (warehouse_id, product_id)
         stmt = (
             select(StockOnWarehouse)
-            .where(StockOnWarehouse.Warehouse_id == warehouse_id, StockOnWarehouse.Product_id == product_id)
+            .where(StockOnWarehouse.warehouse_id == warehouse_id, StockOnWarehouse.product_id == product_id)
             .with_for_update()
         )
         return self.uow.session.scalars(stmt).first()

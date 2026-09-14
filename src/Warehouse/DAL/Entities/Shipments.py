@@ -29,13 +29,15 @@ class ShipmentStage(Base):
     sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     received_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
-
 class StageItem(Base):
     __tablename__ = "StageItems"
     
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     stage_id: Mapped[int] = mapped_column(ForeignKey("ShipmentStages.id"), nullable=False)
     product_id: Mapped[int] = mapped_column(ForeignKey("Products.id"), nullable=False)
-    document_quantity: Mapped[Decimal] = mapped_column(Numeric(12, 0), nullable=False)
+    
+    # Исправлено: точность изменена с (12, 0) на (12, 3) для весового товара
+    document_quantity: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
     actual_quantity: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 3), nullable=True)
     comment: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
