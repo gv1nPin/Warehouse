@@ -29,3 +29,6 @@ class EmployeeRepository:
             "warehouse_id": employee.warehouse_id,
             "permissions": permissions_list
         }
+    def get_by_login(self, login: str) -> Optional[Employee]:
+        stmt = select(Employee).where(Employee.login == login, Employee.is_deleted == False)
+        return self.uow.session.scalars(stmt).first()
