@@ -1,4 +1,4 @@
-from src.Warehouse.DAL.Session import session_factory
+from Warehouse.DAL.database import session_factory
 from src.Warehouse.DAL.SQLAlchemyUnitOfWork import SQLAlchemyUnitOfWork
 
 def main():

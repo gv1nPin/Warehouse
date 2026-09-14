@@ -1,6 +1,6 @@
 # src/Warehouse/container.py
 from dependency_injector import containers, providers
-from src.Warehouse.DAL.Session import session_factory
+from src.Warehouse.DAL.database import session_factory
 from src.Warehouse.DAL.SQLAlchemyUnitOfWork import SQLAlchemyUnitOfWork
 from src.Warehouse.BLL.Services.ShipmentService.ShipmentDispatchService import ShipmentDispatchService
 from src.Warehouse.BLL.Services.ShipmentService.ShipmentTransitCoordinator import ShipmentTransitCoordinator
