@@ -1,4 +1,3 @@
-# src/Warehouse/DAL/Entities/Warehouses.py
 from typing import List, Optional
 from sqlalchemy import String, ForeignKey, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
