@@ -1,7 +1,7 @@
 from datetime import date, datetime, timezone
 from typing import List, Optional
 from sqlalchemy import select
-from Warehouse.DAL.Entities.models import Shipment, ShipmentStage, StageItem, StockOnWarehouse
+from Warehouse.DAL.Entities.Shipments import Shipment, ShipmentStage, StageItem, StockOnWarehouse
 from Warehouse.DAL.SQLAlchemyUnitOfWork import SQLAlchemyUnitOfWork
 
 class DispatchRepository:

@@ -1,6 +1,6 @@
 from typing import Optional
 from sqlalchemy import select, update
-from Warehouse.DAL.Entities.models import Shipment, ShipmentStage, StageItem
+from Warehouse.DAL.Entities.Shipments import Shipment, ShipmentStage, StageItem
 from Warehouse.DAL.SQLAlchemyUnitOfWork import SQLAlchemyUnitOfWork
 
 class TransitRepository:
