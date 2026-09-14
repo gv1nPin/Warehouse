@@ -14,6 +14,5 @@ class Employee(Base):
     role_id: Mapped[int] = mapped_column(ForeignKey("Roles.id"), nullable=False)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     
-    # Теперь Pylance видит эти классы и не подсвечивает их желтым
     warehouse: Mapped["Warehouse"] = relationship()
     role: Mapped["Role"] = relationship()
