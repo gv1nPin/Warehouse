@@ -2,8 +2,8 @@
 from datetime import datetime
 from typing import List, Optional
 from sqlalchemy import select
-from src.Warehouse.DAL.Entities.models import Shipment, ShipmentStage, StageItem
-from src.Warehouse.DAL.SQLAlchemyUnitOfWork import SQLAlchemyUnitOfWork
+from Warehouse.DAL.Entities.models import Shipment, ShipmentStage, StageItem
+from Warehouse.DAL.SQLAlchemyUnitOfWork import SQLAlchemyUnitOfWork
 
 class ReceiptRepository:
     def __init__(self, uow: SQLAlchemyUnitOfWork):

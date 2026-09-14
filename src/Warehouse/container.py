@@ -7,7 +7,7 @@ from Warehouse.BLL.Services.ShipmentService.ShipmentReceiptService import Shipme
 
 class Container(containers.DeclarativeContainer):
     # Контейнер автоматически подтянет правильный путь к плагинам
-    wiring_config = containers.WiringConfiguration(modules=["src.main"])
+    wiring_config = containers.WiringConfiguration(modules=["main"])
 
     # 1. Инфраструктурные зависимости (Фабрика сессий)
     session_factory = providers.Object(session_factory)

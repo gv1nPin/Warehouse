@@ -1,6 +1,6 @@
 from typing import Dict
-from src.Warehouse.BLL.Common import ShipmentStatus
-from src.Warehouse.BLL.Interfaces.ShipmentService import (
+from Warehouse.BLL.Common import ShipmentStatus
+from Warehouse.BLL.Interfaces.ShipmentService import (
     AbstractShipmentTransitCoordinator, 
     AbstractShipmentDispatchService
 )

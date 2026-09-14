@@ -1,8 +1,8 @@
 from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
-from src.Warehouse.DAL.Entities.models import Employee, Role
-from src.Warehouse.DAL.SQLAlchemyUnitOfWork import SQLAlchemyUnitOfWork
+from Warehouse.DAL.Entities.models import Employee, Role
+from Warehouse.DAL.SQLAlchemyUnitOfWork import SQLAlchemyUnitOfWork
 
 class EmployeeRepository:
     def __init__(self, uow: SQLAlchemyUnitOfWork):

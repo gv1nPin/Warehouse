@@ -1,7 +1,7 @@
 from typing import Optional
 from sqlalchemy import select, update
-from src.Warehouse.DAL.Entities.models import Shipment, ShipmentStage, StageItem
-from src.Warehouse.DAL.SQLAlchemyUnitOfWork import SQLAlchemyUnitOfWork
+from Warehouse.DAL.Entities.models import Shipment, ShipmentStage, StageItem
+from Warehouse.DAL.SQLAlchemyUnitOfWork import SQLAlchemyUnitOfWork
 
 class TransitRepository:
     def __init__(self, uow: SQLAlchemyUnitOfWork):

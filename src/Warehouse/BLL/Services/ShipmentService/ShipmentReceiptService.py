@@ -1,7 +1,7 @@
 from datetime import datetime, timezone 
 from typing import List
-from src.Warehouse.BLL.Common import ShipmentStatus
-from src.Warehouse.BLL.Interfaces.ShipmentService import (
+from Warehouse.BLL.Common import ShipmentStatus
+from Warehouse.BLL.Interfaces.ShipmentService import (
     AbstractShipmentReceiptService, 
     AbstractShipmentTransitCoordinator
 )

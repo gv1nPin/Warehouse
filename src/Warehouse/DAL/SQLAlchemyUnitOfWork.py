@@ -2,10 +2,10 @@ from typing import Optional, TYPE_CHECKING
 from sqlalchemy.orm import Session
 
 if TYPE_CHECKING:
-    from src.Warehouse.DAL.Repositories.DispatchRepository import DispatchRepository
-    from src.Warehouse.DAL.Repositories.EmployeeRepository import EmployeeRepository
-    from src.Warehouse.DAL.Repositories.ReceiptRepository import ReceiptRepository
-    from src.Warehouse.DAL.Repositories.TransitRepository import TransitRepository
+    from Warehouse.DAL.Repositories.DispatchRepository import DispatchRepository
+    from Warehouse.DAL.Repositories.EmployeeRepository import EmployeeRepository
+    from Warehouse.DAL.Repositories.ReceiptRepository import ReceiptRepository
+    from Warehouse.DAL.Repositories.TransitRepository import TransitRepository
 
 
 class SQLAlchemyUnitOfWork:
@@ -29,10 +29,10 @@ class SQLAlchemyUnitOfWork:
         self._session = self.session_factory()
         
         # Локальный импорт классов репозиториев в рантайме для исключения циклических зависимостей
-        from src.Warehouse.DAL.Repositories.DispatchRepository import DispatchRepository
-        from src.Warehouse.DAL.Repositories.EmployeeRepository import EmployeeRepository
-        from src.Warehouse.DAL.Repositories.ReceiptRepository import ReceiptRepository
-        from src.Warehouse.DAL.Repositories.TransitRepository import TransitRepository
+        from Warehouse.DAL.Repositories.DispatchRepository import DispatchRepository
+        from Warehouse.DAL.Repositories.EmployeeRepository import EmployeeRepository
+        from Warehouse.DAL.Repositories.ReceiptRepository import ReceiptRepository
+        from Warehouse.DAL.Repositories.TransitRepository import TransitRepository
         
         # Инициализируем репозитории и передаем им текущий экземпляр UOW
         self.dispatch = DispatchRepository(self)

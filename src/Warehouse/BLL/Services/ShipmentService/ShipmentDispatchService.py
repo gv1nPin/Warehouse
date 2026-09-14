@@ -1,7 +1,7 @@
 from datetime import date, datetime, timezone
 from typing import List
-from src.Warehouse.BLL.Interfaces.ShipmentService import AbstractShipmentDispatchService
-from src.Warehouse.BLL.Common import ShipmentStatus
+from Warehouse.BLL.Interfaces.ShipmentService import AbstractShipmentDispatchService
+from Warehouse.BLL.Common import ShipmentStatus
 
 class BusinessLogicException(Exception): pass
 class InsufficientStockException(Exception): pass
