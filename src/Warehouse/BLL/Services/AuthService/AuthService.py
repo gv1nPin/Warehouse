@@ -3,7 +3,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any
 from Warehouse.BLL.Interfaces.AuthService.AbstractAuthService import AbstractAuthService
-from Warehouse.BLL.Common.security import hash_password, verify_password
+from Warehouse.BLL.Common.Security import hash_password, verify_password
 
 class AuthException(Exception): pass
 class InvalidCredentialsException(AuthException): pass
