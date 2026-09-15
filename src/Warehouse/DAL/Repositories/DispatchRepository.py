@@ -61,7 +61,7 @@ class DispatchRepository:
         
         # Модифицируем объект напрямую. Сессия UOW зафиксирует изменения при коммите.
         stock.reserved_quantity = float(stock.reserved_quantity) + amount
-        stock.last_updated = datetime.now(timezone.utc).date()
+        stock.last_updated = datetime.now(timezone.utc)
 
     def update_stage_status(self, stage_id: int, status_id: int) -> None:
         stmt = select(ShipmentStage).where(ShipmentStage.id == stage_id)
