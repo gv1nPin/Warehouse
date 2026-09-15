@@ -1,9 +1,18 @@
 import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:1234@localhost:5432/warehouse_db")
+from dotenv import load_dotenv
+from sqlalchemy import URL, create_engine
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
+DATABASE_URL = URL.create(
+    drivername="postgresql+psycopg2",
+    username=os.getenv("DB_USER", "postgres"),
+    password=os.getenv("DB_PASSWORD"),
+    host=os.getenv("DB_HOST", "localhost"),
+    port=int(os.getenv("DB_PORT", "5432")),
+    database=os.getenv("DB_NAME", "Warehouse"),
+)
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True
