@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone 
 from typing import List
 from Warehouse.BLL.Common import ShipmentStatus
@@ -12,19 +13,11 @@ class EntityNotFoundException(Exception): pass
 
 class ShipmentReceiptService(AbstractShipmentReceiptService):
     def __init__(self, uow, transit_coordinator: AbstractShipmentTransitCoordinator):
-        """Инициализирует сервис управления приёмкой грузов.
-
-        Args:
-            uow: Универсальный Unit of Work (дает доступ к репозиториям и сессии).
-            transit_coordinator (AbstractShipmentTransitCoordinator): Зависимость от координатора транзита.
-        """
         self.uow = uow
         self.transit_coordinator = transit_coordinator
 
     def get_incoming_stages(self, warehouse_id: int) -> List[dict]:
-        # Чтение выполняется вне транзакции, берем репозиторий через сессию по умолчанию или открываем транзакцию
-        with self.uow:
-            return self.uow.receipt.get_incoming_stages_by_warehouse(warehouse_id, status_id=ShipmentStatus.SHIPPED)
+        return self.uow.receipt.get_incoming_stages_by_warehouse(warehouse_id, status_id=ShipmentStatus.SHIPPED)
 
     def enter_actual_quantity(self, stage_id: int, product_id: int, actual_quantity: float) -> None:
         if actual_quantity < 0:
@@ -38,22 +31,25 @@ class ShipmentReceiptService(AbstractShipmentReceiptService):
                 raise BusinessLogicException("Вносить фактическое количество можно только для грузов в пути.")
                 
             self.uow.receipt.update_item_actual_quantity(stage_id, product_id, actual_quantity)
+            logging.info(f"Кладовщик внес факт по товару ID {product_id} для этапа {stage_id}: {actual_quantity}")
 
     def accept_stage(self, stage_id: int, employee_id: int) -> None:
+        logging.info(f"Сотрудник ID {employee_id} закрывает приёмку для этапа ID {stage_id}")
         with self.uow:  
             stage = self.uow.receipt.get_stage_by_id(stage_id)
             if not stage:
                 raise EntityNotFoundException("Этап не найден.")
                 
-            # Запрашиваем сотрудника через свойство uow.employee
             employee = self.uow.employee.get_by_id_with_permissions(employee_id)
             if not employee:
                 raise EntityNotFoundException("Сотрудник приёмки не найден.")
                 
             if "shipment:accept" not in employee.get("permissions", []):
+                logging.warning(f" ОТКАЗ В ДОСТУПЕ: Попытка приемки этапа {stage_id} сотрудником ID {employee_id} без прав.")
                 raise AccessDeniedException("У вашей роли нет прав на приемку грузов.")
                 
             if employee["warehouse_id"] != stage["to_warehouse_id"]:
+                logging.warning(f" Нарушение периметра: Кладовщик склада {employee['warehouse_id']} пытался принять груз Склада {stage['to_warehouse_id']}")
                 raise AccessDeniedException("Вы не можете принять груз, направленный на чужой склад.")
             
             stage_items = self.uow.receipt.get_stage_items(stage_id)
@@ -70,6 +66,7 @@ class ShipmentReceiptService(AbstractShipmentReceiptService):
                 acceptor_id=employee_id, 
                 received_at=datetime.now(timezone.utc)
             )
+            logging.info(f"Этап {stage_id} успешно завершен со статусом: {final_status.name}")
 
             next_stage = self.uow.receipt.get_stage_by_order(
                 shipment_id=stage["shipment_id"], 
@@ -77,9 +74,9 @@ class ShipmentReceiptService(AbstractShipmentReceiptService):
             )
             
             if next_stage:
+                logging.info(f"Передаем управление кросс-докингу для переброски на этап ID {next_stage['id']}")
                 accepted_items = {item["product_id"]: float(item["actual_quantity"]) for item in stage_items}
-                # Передаем управление координатору транзита в рамках ТЕКУЩЕЙ транзакции UOW
                 self.transit_coordinator.move_to_next_stage(stage_id, next_stage["id"], accepted_items)
             else:
-                final_shipment_status = ShipmentStatus.DISCREPANCY if has_discrepancies else ShipmentStatus.RECEIVED
-                self.uow.receipt.update_shipment_status(stage["shipment_id"], status_id=final_shipment_status)
+                self.uow.receipt.update_shipment_status(stage["shipment_id"], status_id=final_status)
+                logging.info(f" Поставка {stage['shipment_id']} полностью завершила свой маршрут.")

@@ -1,3 +1,4 @@
+import logging
 from typing import Dict
 from Warehouse.BLL.Common import ShipmentStatus
 from Warehouse.BLL.Interfaces.ShipmentService import (
@@ -5,17 +6,17 @@ from Warehouse.BLL.Interfaces.ShipmentService import (
     AbstractShipmentDispatchService
 )
 
-class EntityNotFoundException(Exception): pass
+class BusinessLogicException(Exception): pass
+class EntityNotFoundException(BusinessLogicException): pass 
 
 class ShipmentTransitCoordinator(AbstractShipmentTransitCoordinator):
     def __init__(self, uow, dispatch_service: AbstractShipmentDispatchService):
-        """Инициализирует координатор транзита и кросс-докинга."""
         self.uow = uow
-        self.dispatch_service = dispatch_service   # Зависимость от абстрактного сервиса отправки
+        self.dispatch_service = dispatch_service
 
     def move_to_next_stage(self, current_stage_id: int, next_stage_id: int, accepted_items: Dict[int, float]) -> None:
+        logging.info(f" Инициализация кросс-докинга: этап {current_stage_id} -> этап {next_stage_id}")
         with self.uow:  
-            # Обращаемся через динамическое свойство uow.transit
             next_stage = self.uow.transit.get_stage_by_id(next_stage_id)
             if not next_stage:
                 raise EntityNotFoundException("Следующий этап транзита не найден.")
@@ -35,4 +36,5 @@ class ShipmentTransitCoordinator(AbstractShipmentTransitCoordinator):
             self.uow.transit.update_stage_status(next_stage_id, status_id=ShipmentStatus.DRAFT)
             
             if has_items_to_forward:
+                logging.info(f"Автоматическое перерезервирование товаров для следующего плеча поставки...")
                 self.dispatch_service.reserve_stage_items(next_stage_id)

@@ -1,5 +1,6 @@
 import jwt
 import os
+import logging  # Внедряем стандартный встроенный модуль логирования
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any
 from Warehouse.BLL.Interfaces.AuthService.AbstractAuthService import AbstractAuthService
@@ -19,17 +20,21 @@ class AuthService(AbstractAuthService):
         self.access_token_expire_minutes = 60 * 8  # Токен активен рабочую смену (8 часов)
 
     def register_employee(self, first_name: str, last_name: str, warehouse_id: int, role_id: int, login: str, plain_password: str) -> int:
+        logging.info(f"Запущена процедура регистрации нового сотрудника. Логин: {login}, Склад ID: {warehouse_id}, Роль ID: {role_id}")
+        
         with self.uow:
             # 1. Проверяем, не занят ли логин
             existing_user = self.uow.employee.get_by_login(login)
             if existing_user:
+                logging.warning(f" Ошибка регистрации: Логин '{login}' уже занят в системе.")
                 raise AuthException("Сотрудник с таким логином уже зарегистрирован.")
 
             # 2. Превращаем открытый пароль в безопасный необратимый хэш
             pwd_hash = hash_password(plain_password)
 
             # 3. Создаем объект модели через сессию SQLAlchemy
-            from src.Warehouse.DAL.Entities.Warehouses import Employee
+            # Внимание: убедитесь, что путь "Warehouse.DAL.Entities.Employees" совпадает с файловой системой
+            from Warehouse.DAL.Entities.Employees import Employee
             new_employee = Employee(
                 first_name=first_name,
                 last_name=last_name,
@@ -40,17 +45,25 @@ class AuthService(AbstractAuthService):
             )
             self.uow.session.add(new_employee)
             self.uow.session.flush()  # Запрашиваем сгенерированный ID
+            
+            logging.info(f" Сотрудник '{login}' успешно зарегистрирован. Присвоен системный ID: {new_employee.id}")
             return new_employee.id
 
     def authenticate_employee(self, login: str, plain_password: str) -> Dict[str, Any]:
+        logging.info(f"Попытка входа в систему для пользователя: '{login}'")
+        
         with self.uow:
             # 1. Ищем сотрудника в БД по логину
             employee_orm = self.uow.employee.get_by_login(login)
             if not employee_orm:
+                # Фиксируем в логах попытку входа под несуществующим именем (потенциальный подбор логинов)
+                logging.warning(f" Безопасность: Неудачная попытка входа. Логин '{login}' не найден в БД.")
                 raise InvalidCredentialsException("Неверный логин или пароль.")
 
             # 2. Проверяем валидность пароля через bcrypt
             if not verify_password(plain_password, employee_orm.password_hash):
+                # Подозрение на подбор пароля к реальной учетной записи кладовщика
+                logging.warning(f" Безопасность: Введен неверный пароль для существующего сотрудника '{login}' (ID: {employee_orm.id})")
                 raise InvalidCredentialsException("Неверный login или пароль.")
 
             # 3. Вытаскиваем список его атомарных прав для запекания в JWT
@@ -62,16 +75,17 @@ class AuthService(AbstractAuthService):
             expire = now + timedelta(minutes=self.access_token_expire_minutes)
             
             payload = {
-                "sub": str(employee_orm.id),                     # Идентификатор субъекта
+                "sub": str(employee_orm.id),                     # ID сотрудника
                 "warehouse_id": employee_orm.warehouse_id,        # К какому складу привязан
-                "permissions": permissions,                      # Список прав (RBAC)
+                "permissions": permissions,                      # Массив прав (RBAC)
                 "iat": now,                                      # Время создания
-                "exp": expire                                    # Время протухания
+                "exp": expire                                    # Время окончания действия токена
             }
 
             # 5. Кодируем токен
             token = jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
             
+            logging.info(f" Пользователь '{login}' (ID: {employee_orm.id}) успешно авторизован. JWT-токен выдан на 8 часов.")
             return {
                 "access_token": token,
                 "token_type": "bearer",
@@ -84,6 +98,8 @@ class AuthService(AbstractAuthService):
             payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
             return payload
         except jwt.ExpiredSignatureError:
+            logging.warning(" Сессия: Попытка доступа с протухшим JWT-токеном.")
             raise TokenExpiredException("Срок действия токена авторизации истек.")
         except jwt.PyJWTError:
+            logging.warning(" Безопасность: Попытка доступа с полностью некорректным/поддельным JWT-токеном!")
             raise InvalidTokenException("Предоставлен некорректный токен доступа.")

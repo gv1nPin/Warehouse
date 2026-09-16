@@ -1,4 +1,3 @@
-# src/Warehouse/BLL/Common/logger.py
 import logging
 import os
 from logging.handlers import RotatingFileHandler
