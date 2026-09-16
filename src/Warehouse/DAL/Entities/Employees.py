@@ -1,7 +1,7 @@
 from sqlalchemy import String, ForeignKey, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from warehouse.DAL.entities.base import Base
-from warehouse.DAL.entities.Warehouses import warehouse, Role
+from warehouse.dal.entities.base.declarative import Base
+from warehouse.dal.entities.warehouses import warehouse, Role
 
 
 class Employee(Base):
@@ -17,5 +17,5 @@ class Employee(Base):
     login: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
     
-    warehouse: Mapped["Warehouse"] = relationship()
+    warehouse: Mapped["warehouse"] = relationship()
     role: Mapped["Role"] = relationship()

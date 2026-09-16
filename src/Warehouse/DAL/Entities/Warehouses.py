@@ -1,7 +1,7 @@
 from typing import List, Optional
 from sqlalchemy import String, ForeignKey, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from warehouse.DAL.entities.Base import Base
+from warehouse.dal.entities.base.declarative import Base
 
 class RolePermission(Base):
     __tablename__ = "RolePermissions"

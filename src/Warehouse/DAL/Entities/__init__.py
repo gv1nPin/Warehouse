@@ -1,10 +1,10 @@
-from Warehouse.DAL.Entities.Base import Base
+from warehouse.dal.entities.base import Base
 
 # 2. Импортируем все модели из их новых персональных файлов
-from Warehouse.DAL.Entities.Warehouses import RolePermission, Role, Permission, Warehouse
-from Warehouse.DAL.Entities.Employees import Employee
-from Warehouse.DAL.Entities.Products import Product, StockOnWarehouse
-from Warehouse.DAL.Entities.Shipments import Shipment, ShipmentStage, StageItem
+from warehouse.dal.entities.warehouses import RolePermission, Role, Permission, Warehouse
+from warehouse.dal.entities.employees import Employee
+from warehouse.dal.entities.products import Product, StockOnWarehouse
+from warehouse.dal.entities.shipments import Shipment, ShipmentStage, StageItem
 
 # 3. Экспортируем всё наружу единым списком
 __all__ = [

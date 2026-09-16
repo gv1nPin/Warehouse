@@ -3,12 +3,12 @@ from fastapi import FastAPI
 from dependency_injector.wiring import Provide, inject
 
 from container import Container
-from Warehouse.BLL.Services.AuthService.AuthService import AuthService
-from Warehouse.Common.Logger import setup_logging
+from warehouse.bll.services.auth_service.auth_service import AuthService
+from warehouse.common.logger import setup_logging
 
 # Импортируем готовые роутеры для Web-слоя
-from Warehouse.API.Auth import router as Auth_router
-from Warehouse.API.Shipments import router as Shipments_router
+from warehouse.api.auth import router as Auth_router
+from warehouse.api.shipments import router as Shipments_router
 
 
 # НОВЫЙ СИНТАКСИС: Управляет жизненным циклом приложения FastAPI

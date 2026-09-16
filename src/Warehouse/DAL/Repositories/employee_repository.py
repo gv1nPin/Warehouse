@@ -2,9 +2,9 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from warehouse.DAL.entities.Employees import Employee
-from warehouse.DAL.entities.Warehouses import Role
-from warehouse.DAL.unit_of_work import UnitOfWork
+from warehouse.dal.entities.employees import Employee
+from warehouse.dal.entities.warehouses import Role
+from warehouse.dal.unit_of_work import UnitOfWork
 
 class EmployeeRepository:
     def __init__(self, uow: UnitOfWork):

@@ -3,8 +3,8 @@ import os
 import logging  # Внедряем стандартный встроенный модуль логирования
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any
-from warehouse.BLL.Interfaces.AuthService.AbstractAuthService import AbstractAuthService
-from warehouse.Common.Security import hash_password, verify_password
+from warehouse.bll.interfaces.auth_service.abstract_auth_service import AbstractAuthService
+from warehouse.common.security import hash_password, verify_password
 
 class AuthException(Exception): pass
 class InvalidCredentialsException(AuthException): pass
@@ -34,7 +34,7 @@ class AuthService(AbstractAuthService):
 
             # 3. Создаем объект модели через сессию SQLAlchemy
             # Внимание: убедитесь, что путь "Warehouse.DAL.Entities.Employees" совпадает с файловой системой
-            from warehouse.DAL.Entities.Employees import Employee
+            from warehouse.dal.entities.employees import Employee
             new_employee = Employee(
                 first_name=first_name,
                 last_name=last_name,

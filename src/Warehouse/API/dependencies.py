@@ -4,7 +4,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dependency_injector.wiring import inject, Provide
 
 from container import Container
-from warehouse.BLL.Services.AuthService.AuthService import AuthService, AuthException
+from warehouse.bll.services.auth_service.auth_service import AuthService, AuthException
 
 # Стандартный компонент FastAPI, который ищет заголовок "Authorization: Bearer <JWT-TOKEN>"
 security_scheme = HTTPBearer()

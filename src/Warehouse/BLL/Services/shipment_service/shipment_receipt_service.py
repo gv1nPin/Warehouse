@@ -1,12 +1,10 @@
 import logging
 from datetime import datetime, timezone 
 from typing import List
-from warehouse.Common import ShipmentStatus
-from warehouse.API.Mappers.ShipmentsMappers import ShipmentMapper
-from warehouse.BLL.Interfaces.ShipmentService import (
-    AbstractShipmentReceiptService, 
-    AbstractShipmentTransitCoordinator
-)
+from warehouse.common import ShipmentStatus
+from warehouse.api.mappers.shipments_mappers import ShipmentMapper
+from warehouse.bll.interfaces.shipment_service.abstract_shipment_receipt_service import AbstractShipmentReceiptService
+from warehouse.bll.interfaces.shipment_service.abstract_shipment_transit_coordinator import AbstractShipmentTransitCoordinator 
 
 class BusinessLogicException(Exception): pass
 class AccessDeniedException(Exception): pass
