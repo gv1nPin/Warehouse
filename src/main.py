@@ -11,7 +11,7 @@ from Warehouse.API.Auth import router as Auth_router
 from Warehouse.API.Shipments import router as Shipments_router
 
 
-# 🔥 НОВЫЙ СИНТАКСИС: Управляет жизненным циклом приложения FastAPI
+# НОВЫЙ СИНТАКСИС: Управляет жизненным циклом приложения FastAPI
 @asynccontextmanager
 async def lifespan(fastapi_app: FastAPI):
     # Данный блок выполняется СТРОГО ОДИН РАЗ при старте веб-сервера uvicorn
