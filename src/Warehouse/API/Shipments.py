@@ -4,7 +4,7 @@ from dependency_injector.wiring import inject, Provide
 
 from container import Container
 from Warehouse.API.Dependencies import PermissionChecker
-from Warehouse.API.Schemas.Shipments_dto import (
+from Warehouse.API.Schemas.ShipmentsDto import (
     ShipmentDraftCreateInputDTO, 
     ItemToStageAddInputDTO, 
     ActualQuantityInputDTO,

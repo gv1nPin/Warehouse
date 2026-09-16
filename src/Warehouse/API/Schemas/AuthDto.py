@@ -14,6 +14,7 @@ class LoginInputDTO(BaseModel):
     login: str = Field(..., description="Логин сотрудника")
     password: str = Field(..., description="Пароль")
 
+# токен для JWT
 class TokenOutputDTO(BaseModel):
     """Выходной DTO, возвращающий JWT-токен в браузер."""
     access_token: str

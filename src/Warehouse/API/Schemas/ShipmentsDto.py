@@ -3,7 +3,7 @@ from datetime import date, datetime
 from typing import List, Optional
 from decimal import Decimal
 
-# --- ВХОДНЫЕ DTO (Запросы от клиента) ---
+# входные DTO
 
 class ShipmentDraftCreateInputDTO(BaseModel):
     """Входной DTO для планирования маршрута перевозки."""
