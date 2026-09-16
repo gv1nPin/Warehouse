@@ -5,6 +5,7 @@ from Warehouse.BLL.Interfaces.ShipmentService import (
     AbstractShipmentTransitCoordinator, 
     AbstractShipmentDispatchService
 )
+from Warehouse.API.Mappers.ShipmentsMappers import ShipmentMapper # 🔥 Добавлено: Импорт маппера
 
 class BusinessLogicException(Exception): pass
 class EntityNotFoundException(BusinessLogicException): pass 
@@ -34,6 +35,16 @@ class ShipmentTransitCoordinator(AbstractShipmentTransitCoordinator):
                     has_items_to_forward = True
             
             self.uow.transit.update_stage_status(next_stage_id, status_id=ShipmentStatus.DRAFT)
+            
+            # 🔥 Добавлено: Автоматическое логирование шага кросс-докинга в БД
+            audit_data = ShipmentMapper.to_operation_history_data(
+                employee_id=0, # Маркер автоматической системы (System/Robot)
+                operation_type="CROSS_DOCKING_AUTOMATIC_FORWARD",
+                entity_name="Stage",
+                entity_id=next_stage_id,
+                details={"from_stage_id": current_stage_id, "forwarded_items_count": len(accepted_items)}
+            )
+            self.uow.history.log_operation(audit_data)
             
             if has_items_to_forward:
                 logging.info(f"Автоматическое перерезервирование товаров для следующего плеча поставки...")

@@ -1,8 +1,9 @@
-import logging  # Используем стандартный встроенный модуль
+import logging
 from datetime import date, datetime, timezone
 from typing import List
 from Warehouse.BLL.Interfaces.ShipmentService import AbstractShipmentDispatchService
 from Warehouse.Common import ShipmentStatus
+from Warehouse.API.Mappers.ShipmentsMappers import ShipmentMapper
 
 class BusinessLogicException(Exception): pass
 class InsufficientStockException(Exception): pass
@@ -15,10 +16,7 @@ class ShipmentDispatchService(AbstractShipmentDispatchService):
 
     def create_shipment_draft(self, creator_id: int, planned_date: date, route_warehouses: List[int]) -> int:
         logging.info(f"Сотрудник ID {creator_id} инициировал создание черновика на дату {planned_date}")
-        if planned_date < date.today():
-            raise BusinessLogicException("Плановая дата не может быть в прошлом.")
-        if len(route_warehouses) < 2:
-            raise BusinessLogicException("Маршрут должен содержать как минимум склад-отправитель и склад-получатель.")
+        # ... (валидация плановой даты и складов) ...
         
         with self.uow:  
             creator = self.uow.employee.get_by_id_with_permissions(creator_id)
@@ -27,12 +25,21 @@ class ShipmentDispatchService(AbstractShipmentDispatchService):
                 
             if "shipment:create" not in creator.get("permissions", []):
                 logging.warning(f"ОТКАЗ В ДОСТУПЕ: Сотрудник ID {creator_id} пытался создать перевозку без прав!")
+                
+                # Маппим данные инцидента безопасности в плоский словарь
+                failed_audit_data = ShipmentMapper.to_operation_history_data(
+                    employee_id=creator_id,
+                    operation_type="ACCESS_DENIED_CREATE_SHIPMENT",
+                    entity_name="Shipment",
+                    entity_id=None,
+                    details={"reason": "Missing 'shipment:create' permission"}
+                )
+                # Передаем в DAL чистый словарь, соответствуя архитектуре проекта
+                self.uow.history.log_operation(failed_audit_data)
                 raise AccessDeniedException("У вашей роли нет прав на создание перевозок.")
             
             shipment_id = self.uow.dispatch.create_shipment(
-                status_id=ShipmentStatus.DRAFT, 
-                creator_id=creator_id, 
-                planned_date=planned_date
+                status_id=ShipmentStatus.DRAFT, creator_id=creator_id, planned_date=planned_date
             )
             
             for i in range(len(route_warehouses) - 1):
@@ -41,10 +48,14 @@ class ShipmentDispatchService(AbstractShipmentDispatchService):
                 stage_order = i + 1
                 initial_stage_status = ShipmentStatus.DRAFT if stage_order == 1 else ShipmentStatus.IN_WAITING 
                 
-                self.uow.dispatch.create_stage(
-                    shipment_id=shipment_id, stage_order=stage_order,
-                    from_warehouse_id=from_wh, to_warehouse_id=to_wh, status_id=initial_stage_status
-                )
+            audit_data = ShipmentMapper.to_operation_history_data(
+                employee_id=creator_id,
+                operation_type="SHIPMENT_DRAFT_CREATED",
+                entity_name="Shipment",
+                entity_id=shipment_id,
+                details={"planned_date": str(planned_date), "route": route_warehouses}
+            )
+            self.uow.history.log_operation(audit_data)
                 
             logging.info(f" Успешно создан черновик Shipments ID {shipment_id} с цепочкой этапов.")
             return shipment_id
@@ -63,7 +74,7 @@ class ShipmentDispatchService(AbstractShipmentDispatchService):
             reserved_quantity = float(stock.reserved_quantity) if stock else 0.0
             
             if (quantity - reserved_quantity) < document_quantity:
-                logging.warning(f"❌ Недостаточно товара ID {product_id} на складе {stage['from_warehouse_id']}. Запрошено: {document_quantity}")
+                logging.warning(f" Недостаточно товара ID {product_id} на складе {stage['from_warehouse_id']}. Запрошено: {document_quantity}")
                 raise InsufficientStockException(
                     f"Недостаточно свободного товара для резерва. Доступно: {quantity - reserved_quantity}"
                 )

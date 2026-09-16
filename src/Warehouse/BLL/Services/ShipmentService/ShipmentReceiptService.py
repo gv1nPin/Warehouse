@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, timezone 
 from typing import List
 from Warehouse.Common import ShipmentStatus
+from Warehouse.API.Mappers.ShipmentsMappers import ShipmentMapper
 from Warehouse.BLL.Interfaces.ShipmentService import (
     AbstractShipmentReceiptService, 
     AbstractShipmentTransitCoordinator
@@ -49,8 +50,18 @@ class ShipmentReceiptService(AbstractShipmentReceiptService):
                 raise AccessDeniedException("У вашей роли нет прав на приемку грузов.")
                 
             if employee["warehouse_id"] != stage["to_warehouse_id"]:
-                logging.warning(f" Нарушение периметра: Кладовщик склада {employee['warehouse_id']} пытался принять груз Склада {stage['to_warehouse_id']}")
-                raise AccessDeniedException("Вы не можете принять груз, направленный на чужой склад.")
+                logging.warning(f" Нарушение периметра: Кладовщик склада...")
+                
+                # Маппим нарушение периметра в словарь данных
+                failed_wh_audit = ShipmentMapper.to_operation_history_data(
+                    employee_id=employee_id,
+                    operation_type="SECURITY_PERIMETER_VIOLATION",
+                    entity_name="Stage",
+                    entity_id=stage_id,
+                    details={"employee_warehouse": employee["warehouse_id"], "target_warehouse": stage["to_warehouse_id"]}
+                )
+                self.uow.history.log_operation(failed_wh_audit)
+                raise AccessDeniedException("Вы не можете принять груз, направленный на чужной склад.")
             
             stage_items = self.uow.receipt.get_stage_items(stage_id)
             for item in stage_items:
@@ -67,6 +78,15 @@ class ShipmentReceiptService(AbstractShipmentReceiptService):
                 received_at=datetime.now(timezone.utc)
             )
             logging.info(f"Этап {stage_id} успешно завершен со статусом: {final_status.name}")
+
+            audit_data = ShipmentMapper.to_operation_history_data(
+                employee_id=employee_id,
+                operation_type="STAGE_ACCEPTED_RECEIVED" if final_status == ShipmentStatus.RECEIVED else "STAGE_ACCEPTED_WITH_DISCREPANCY",
+                entity_name="Stage",
+                entity_id=stage_id,
+                details={"warehouse_id": employee["warehouse_id"]}
+            )
+            self.uow.history.log_operation(audit_data)
 
             next_stage = self.uow.receipt.get_stage_by_order(
                 shipment_id=stage["shipment_id"], 
