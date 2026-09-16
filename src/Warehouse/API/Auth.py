@@ -4,6 +4,7 @@ from dependency_injector.wiring import inject, Provide
 from container import Container
 from Warehouse.BLL.Services.AuthService.AuthService import AuthService, AuthException
 from Warehouse.API.Schemas.Auth_dto import EmployeeRegisterInputDTO, LoginInputDTO, TokenOutputDTO
+from Warehouse.API.Mappers.AuthMappers import AuthMapper  # 🔥 Внедряем маппер
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -33,10 +34,11 @@ def login_employee(
     auth_service: AuthService = Depends(Provide[Container.auth_service])
 ):
     try:
-        token_data = auth_service.authenticate_employee(
+        token_raw_data = auth_service.authenticate_employee(
             login=payload.login,
             plain_password=payload.password
         )
-        return token_data
+        # ЯВНЫЙ МАППИНГ: Чистый и защищенный перевод данных в DTO
+        return AuthMapper.to_token_output_dto(token_raw_data)
     except AuthException as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))

@@ -1,11 +1,10 @@
-# src/Warehouse/API/Mappers/Shipments_mappers.py
 from typing import List, Dict, Any
 from Warehouse.API.Schemas.Shipments_dto import IncomingStageOutputDTO
 
 class ShipmentMapper:
     @staticmethod
     def to_incoming_stage_dto(stage_data: Dict[str, Any]) -> IncomingStageOutputDTO:
-        """Трансформирует данные этапа из формата BLL/DAL в интерфейсный DTO."""
+        """Конвертирует данные одного этапа из формата BLL/DAL в интерфейсный DTO."""
         return IncomingStageOutputDTO(
             stage_id=stage_data["stage_id"],
             shipment_id=stage_data["shipment_id"],
@@ -16,5 +15,5 @@ class ShipmentMapper:
 
     @staticmethod
     def to_incoming_stage_dto_list(stages_list: List[Dict[str, Any]]) -> List[IncomingStageOutputDTO]:
-        """Трансформирует массив данных в массив DTO."""
+        """Конвертирует массив структур в список валидных DTO-объектов."""
         return [ShipmentMapper.to_incoming_stage_dto(stage) for stage in stages_list]

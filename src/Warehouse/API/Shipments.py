@@ -13,6 +13,7 @@ from Warehouse.API.Schemas.Shipments_dto import (
 )
 from Warehouse.BLL.Services.ShipmentService.ShipmentDispatchService import ShipmentDispatchService
 from Warehouse.BLL.Services.ShipmentService.ShipmentReceiptService import ShipmentReceiptService
+from Warehouse.API.Mappers.ShipmentsMappers import ShipmentMapper  # 🔥 Внедряем маппер
 
 router = APIRouter(prefix="/shipments", tags=["Warehouse Shipments"])
 
@@ -84,7 +85,11 @@ def get_incoming_stages(
     current_user: dict = Depends(PermissionChecker("shipment:accept")),
     receipt_service: ShipmentReceiptService = Depends(Provide[Container.receipt_service])
 ):
-    return receipt_service.get_incoming_stages(warehouse_id=warehouse_id)
+    # Извлекаем сырые данные/структуры из слоя BLL
+    raw_incoming_stages = receipt_service.get_incoming_stages(warehouse_id=warehouse_id)
+    
+    # ЯВНЫЙ МАППИНГ: Быстрая и предсказуемая трансформация в список выходных DTO
+    return ShipmentMapper.to_incoming_stage_dto_list(raw_incoming_stages)
 
 @router.post("/stages/{stage_id}/products/{product_id}/actual-quantity", response_model=BaseActionResponseDTO)
 @inject
