@@ -1,32 +1,34 @@
 from dependency_injector import containers, providers
 from warehouse.dal.database import session_factory
+from warehouse.dal.unit_of_work import UnitOfWork
 
-from warehouse.dal.unit_of_work import unit_of_work
-
-from warehouse.bll.services.auth_service.auth_service import auth_service
-from warehouse.bll.services.shipment_service.shipment_dispatch_service import shipment_dispatch_service
-from warehouse.bll.services.shipment_service.shipment_transit_coordinator import shipment_transit_coordinator
-from warehouse.bll.services.shipment_service.shipment_receipt_service import shipment_receipt_service
+# Импортируем классы сервисов бизнес-логики BLL
+from warehouse.bll.services.auth_service.auth_service import AuthService
+from warehouse.bll.services.shipment_service.shipment_dispatch_service import ShipmentDispatchService
+from warehouse.bll.services.shipment_service.shipment_transit_coordinator import ShipmentTransitCoordinator
+from warehouse.bll.services.shipment_service.shipment_receipt_service import ShipmentReceiptService
 
 
 class Container(containers.DeclarativeContainer):
-    # Контейнер автоматически подтянет правильный путь к плагинам
-    wiring_config = containers.WiringConfiguration(modules=["main"])
+    # Конфигурация явного wiring_config теперь расширена на роутеры и мапперы
+    wiring_config = containers.WiringConfiguration(modules=[
+        "main",
+        "warehouse.api.auth",
+        "warehouse.api.shipments",
+        "warehouse.api.mappers.auth_mappers",
+        "warehouse.api.mappers.shipments_mappers"
+    ])
 
     # 1. Инфраструктурные зависимости (Фабрика сессий)
     session_factory = providers.Object(session_factory)
 
     # 2. DAL: Unit of Work 
-    # ИСПРАВЛЕНО: ThreadSafeSingleton гарантирует, что все сервисы будут разделять 
-    # ОДНУ И ТУ ЖЕ сессию SQLAlchemy и одну транзакцию в рамках выполнения операции.
     uow = providers.ThreadSafeSingleton(
         UnitOfWork,
         session_factory=session_factory,
     )
 
     # 3. BLL: Сервисы и координаторы
-    
-    # Добавлен сервис аутентификации (передаем в него синглтон uow)
     auth_service = providers.Factory(
         AuthService,
         uow=uow,
