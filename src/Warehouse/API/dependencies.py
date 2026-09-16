@@ -1,4 +1,3 @@
-# src/Warehouse/API/dependencies.py
 import logging
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials

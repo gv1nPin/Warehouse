@@ -3,7 +3,7 @@ from dependency_injector.wiring import inject, Provide
 
 from container import Container
 from Warehouse.BLL.Services.AuthService.AuthService import AuthService, AuthException
-from Warehouse.API.Schemas.auth_dto import EmployeeRegisterInputDTO, LoginInputDTO, TokenOutputDTO
+from Warehouse.API.Schemas.Auth_dto import EmployeeRegisterInputDTO, LoginInputDTO, TokenOutputDTO
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
