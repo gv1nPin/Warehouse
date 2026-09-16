@@ -1,5 +1,5 @@
-from ..DTO import ShipmentDTO, StageDTO, StageItemDTO
-from ..Entities import Shipment, ShipmentStage, StageItem
+from warehouse.api.dto import ShipmentDTO, StageDTO, StageItemDTO
+from warehouse.dal.entities import Shipment, ShipmentStage, StageItem
 from .warehouse import to_warehouse
 
 

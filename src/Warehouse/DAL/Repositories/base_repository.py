@@ -3,7 +3,7 @@ from typing import Any, Generic, TypeVar
 from sqlalchemy import Select, delete, update
 from sqlalchemy.orm import Session
 
-from ..Entities import Base
+from ..entities import Base
 
 ModelT = TypeVar("ModelT", bound=Base)
 

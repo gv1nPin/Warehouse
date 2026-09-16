@@ -4,9 +4,9 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
-from ..DTO import NewStageItem, StageItemDTO
-from ..Entities import Product, StageItem
-from ..Mappers import to_stage_item
+from warehouse.api.dto import NewStageItem, StageItemDTO
+from ..entities import Product, StageItem
+from warehouse.api.mappers import to_stage_item
 from .base_repository import BaseRepository
 
 

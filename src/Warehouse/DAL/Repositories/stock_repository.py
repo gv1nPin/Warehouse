@@ -5,9 +5,9 @@ from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import contains_eager, joinedload
 
-from ..DTO import StockItemDTO
-from ..Entities import Product, StockOnWarehouse
-from ..Mappers import to_stock_item
+from warehouse.api.dto import StockItemDTO
+from ..entities import Product, StockOnWarehouse
+from warehouse.api.mappers import to_stock_item
 from .base_repository import BaseRepository
 
 

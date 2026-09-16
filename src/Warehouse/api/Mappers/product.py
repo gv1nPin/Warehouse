@@ -1,5 +1,5 @@
-from ..DTO import ProductDTO
-from ..Entities import Product
+from warehouse.api.dto import ProductDTO
+from warehouse.dal.entities import Product
 
 
 def to_product(p: Product) -> ProductDTO:

@@ -1,6 +1,6 @@
 from sqlalchemy import select
 
-from ..Entities import Role
+from ..entities import Role
 from .base_repository import BaseRepository
 
 
