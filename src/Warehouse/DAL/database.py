@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 from sqlalchemy import URL, create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
+load_dotenv()
+
 DATABASE_URL = URL.create(
     drivername="postgresql+psycopg2",
     username=os.getenv("DB_USER", "postgres"),
