@@ -3,11 +3,11 @@ from dependency_injector.wiring import Provide, inject
 
 from container import Container
 from Warehouse.BLL.Services.AuthService.AuthService import AuthService
-from Warehouse.BLL.Common.Logger import setup_logging
+from Warehouse.Common.Logger import setup_logging
 
 # Импортируем готовые роутеры для Web-слоя
-from Warehouse.API.Auth import router as auth_router
-from Warehouse.API.Shipments import router as shipments_router
+from Warehouse.API.Auth import router as Auth_router
+from Warehouse.API.Shipments import router as Shipments_router
 
 @inject
 def test_console_run(auth_service: AuthService = Provide[Container.auth_service]):
@@ -29,7 +29,7 @@ def create_app() -> FastAPI:
     # где используется декоратор @inject (включая этот файл и слой API роутеров)
     container.wire(modules=[
         __name__,
-        "Warehouse.API.auth",
+        "Warehouse.API.Auth",
         "Warehouse.API.Shipments"
     ])
     
@@ -41,8 +41,8 @@ def create_app() -> FastAPI:
     )
     
     # 5. Регистрируем эндпоинты в веб-сервере
-    fastapi_app.include_router(auth_router)
-    fastapi_app.include_router(shipments_router)
+    fastapi_app.include_router(Auth_router)
+    fastapi_app.include_router(Shipments_router)
     
     # Сохраняем ссылку на собранный контейнер внутри приложения
     fastapi_app.container = container

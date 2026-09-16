@@ -2,7 +2,7 @@ import logging  # Используем стандартный встроенны
 from datetime import date, datetime, timezone
 from typing import List
 from Warehouse.BLL.Interfaces.ShipmentService import AbstractShipmentDispatchService
-from Warehouse.BLL.Common import ShipmentStatus
+from Warehouse.Common import ShipmentStatus
 
 class BusinessLogicException(Exception): pass
 class InsufficientStockException(Exception): pass

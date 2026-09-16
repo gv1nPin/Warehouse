@@ -2,7 +2,7 @@ import pytest
 from datetime import date, datetime, timedelta
 from unittest.mock import Mock, patch
 
-from src.Warehouse.BLL.Common import ShipmentStatus
+from Warehouse.Common import ShipmentStatus
 from src.Warehouse.BLL.Services.ShipmentService.ShipmentDispatchService import (
     ShipmentDispatchService,
     BusinessLogicException,

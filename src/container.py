@@ -13,7 +13,7 @@ class Container(containers.DeclarativeContainer):
     # Конфигурация явного wiring_config теперь расширена на весь веб-слой
     wiring_config = containers.WiringConfiguration(modules=[
         "main",
-        "Warehouse.API.auth",
+        "Warehouse.API.Auth",
         "Warehouse.API.Shipments"
     ])
 

@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timezone 
 from typing import List
-from Warehouse.BLL.Common import ShipmentStatus
+from Warehouse.Common import ShipmentStatus
 from Warehouse.BLL.Interfaces.ShipmentService import (
     AbstractShipmentReceiptService, 
     AbstractShipmentTransitCoordinator

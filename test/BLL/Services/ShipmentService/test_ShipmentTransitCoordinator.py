@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import Mock
 
-from src.Warehouse.BLL.Common import ShipmentStatus
+from Warehouse.Common import ShipmentStatus
 from src.Warehouse.BLL.Services.ShipmentService.ShipmentTransitCoordinator import ShipmentTransitCoordinator
 
 

@@ -37,4 +37,4 @@ def setup_logging():
     # Показывает сырые SQL-запросы SQLAlchemy прямо в логах для отладки транзакций
     logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
 
-    logging.info("📝 Логи успешно настроены. История пишется в консоль и файл /logs/warehouse.log")
+    logging.info(" Логи успешно настроены. История пишется в консоль и файл /logs/warehouse.log")

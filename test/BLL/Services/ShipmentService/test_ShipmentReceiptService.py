@@ -3,7 +3,7 @@ import pytest
 from datetime import datetime
 from unittest.mock import Mock, patch
 
-from src.Warehouse.BLL.Common import ShipmentStatus
+from Warehouse.Common import ShipmentStatus
 from src.Warehouse.BLL.Services.ShipmentService.ShipmentReceiptService import (
     ShipmentReceiptService,
     BusinessLogicException,

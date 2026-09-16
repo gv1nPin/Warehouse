@@ -1,6 +1,6 @@
 import logging
 from typing import Dict
-from Warehouse.BLL.Common import ShipmentStatus
+from Warehouse.Common import ShipmentStatus
 from Warehouse.BLL.Interfaces.ShipmentService import (
     AbstractShipmentTransitCoordinator, 
     AbstractShipmentDispatchService
