@@ -5,10 +5,10 @@ from Warehouse.BLL.Interfaces.ShipmentService import (
     AbstractShipmentTransitCoordinator, 
     AbstractShipmentDispatchService
 )
-from Warehouse.API.Mappers.ShipmentsMappers import ShipmentMapper # 🔥 Добавлено: Импорт маппера
+from Warehouse.API.Mappers.ShipmentsMappers import ShipmentMapper
 
 class BusinessLogicException(Exception): pass
-class EntityNotFoundException(BusinessLogicException): pass 
+class EntityNotFoundException(Exception): pass 
 
 class ShipmentTransitCoordinator(AbstractShipmentTransitCoordinator):
     def __init__(self, uow, dispatch_service: AbstractShipmentDispatchService):
@@ -36,9 +36,8 @@ class ShipmentTransitCoordinator(AbstractShipmentTransitCoordinator):
             
             self.uow.transit.update_stage_status(next_stage_id, status_id=ShipmentStatus.DRAFT)
             
-            # 🔥 Добавлено: Автоматическое логирование шага кросс-докинга в БД
             audit_data = ShipmentMapper.to_operation_history_data(
-                employee_id=0, # Маркер автоматической системы (System/Robot)
+                employee_id=0, 
                 operation_type="CROSS_DOCKING_AUTOMATIC_FORWARD",
                 entity_name="Stage",
                 entity_id=next_stage_id,

@@ -52,7 +52,6 @@ class ShipmentReceiptService(AbstractShipmentReceiptService):
             if employee["warehouse_id"] != stage["to_warehouse_id"]:
                 logging.warning(f" Нарушение периметра: Кладовщик склада...")
                 
-                # Маппим нарушение периметра в словарь данных
                 failed_wh_audit = ShipmentMapper.to_operation_history_data(
                     employee_id=employee_id,
                     operation_type="SECURITY_PERIMETER_VIOLATION",

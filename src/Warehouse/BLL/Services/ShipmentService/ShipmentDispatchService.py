@@ -16,51 +16,7 @@ class ShipmentDispatchService(AbstractShipmentDispatchService):
 
     def create_shipment_draft(self, creator_id: int, planned_date: date, route_warehouses: List[int]) -> int:
         logging.info(f"Сотрудник ID {creator_id} инициировал создание черновика на дату {planned_date}")
-        # ... (валидация плановой даты и складов) ...
-        
-        with self.uow:  
-            creator = self.uow.employee.get_by_id_with_permissions(creator_id)
-            if not creator:
-                raise EntityNotFoundException("Сотрудник-создатель не найден.")
-                
-            if "shipment:create" not in creator.get("permissions", []):
-                logging.warning(f"ОТКАЗ В ДОСТУПЕ: Сотрудник ID {creator_id} пытался создать перевозку без прав!")
-                
-                # Маппим данные инцидента безопасности в плоский словарь
-                failed_audit_data = ShipmentMapper.to_operation_history_data(
-                    employee_id=creator_id,
-                    operation_type="ACCESS_DENIED_CREATE_SHIPMENT",
-                    entity_name="Shipment",
-                    entity_id=None,
-                    details={"reason": "Missing 'shipment:create' permission"}
-                )
-                # Передаем в DAL чистый словарь, соответствуя архитектуре проекта
-                self.uow.history.log_operation(failed_audit_data)
-                raise AccessDeniedException("У вашей роли нет прав на создание перевозок.")
-            
-            shipment_id = self.uow.dispatch.create_shipment(
-                status_id=ShipmentStatus.DRAFT, creator_id=creator_id, planned_date=planned_date
-            )
-            
-            for i in range(len(route_warehouses) - 1):
-                from_wh = route_warehouses[i]
-                to_wh = route_warehouses[i + 1]
-                stage_order = i + 1
-                initial_stage_status = ShipmentStatus.DRAFT if stage_order == 1 else ShipmentStatus.IN_WAITING 
-                
-            audit_data = ShipmentMapper.to_operation_history_data(
-                employee_id=creator_id,
-                operation_type="SHIPMENT_DRAFT_CREATED",
-                entity_name="Shipment",
-                entity_id=shipment_id,
-                details={"planned_date": str(planned_date), "route": route_warehouses}
-            )
-            self.uow.history.log_operation(audit_data)
-                
-            logging.info(f" Успешно создан черновик Shipments ID {shipment_id} с цепочкой этапов.")
-            return shipment_id
-
-    def add_item_to_stage(self, stage_id: int, product_id: int, document_quantity: float) -> None:
+        if planned_date  None:
         with self.uow:
             stage = self.uow.dispatch.get_stage_by_id(stage_id)
             if not stage:
@@ -73,16 +29,7 @@ class ShipmentDispatchService(AbstractShipmentDispatchService):
             quantity = float(stock.quantity) if stock else 0.0
             reserved_quantity = float(stock.reserved_quantity) if stock else 0.0
             
-            if (quantity - reserved_quantity) < document_quantity:
-                logging.warning(f" Недостаточно товара ID {product_id} на складе {stage['from_warehouse_id']}. Запрошено: {document_quantity}")
-                raise InsufficientStockException(
-                    f"Недостаточно свободного товара для резерва. Доступно: {quantity - reserved_quantity}"
-                )
-            
-            self.uow.dispatch.add_item_to_stage(stage_id, product_id, document_quantity)
-            logging.info(f"Добавлен товар ID {product_id} в этап {stage_id} в объёме {document_quantity}")
-
-    def reserve_stage_items(self, stage_id: int) -> None:
+            if (quantity - reserved_quantity)  None:
         logging.info(f"Запуск резервирования остатков для этапа ID {stage_id}")
         with self.uow:  
             stage = self.uow.dispatch.get_stage_by_id(stage_id)
@@ -101,6 +48,16 @@ class ShipmentDispatchService(AbstractShipmentDispatchService):
                 )
                 
             self.uow.dispatch.update_stage_status(stage_id, status_id=ShipmentStatus.RESERVED)
+            
+            audit_data = ShipmentMapper.to_operation_history_data(
+                employee_id=stage.get("creator_id", 0),
+                operation_type="STAGE_ITEMS_RESERVED",
+                entity_name="Stage",
+                entity_id=stage_id,
+                details={"warehouse_id": stage["from_warehouse_id"], "items_count": len(items)}
+            )
+            self.uow.history.log_operation(audit_data)
+            
             logging.info(f" На Складе ID {stage['from_warehouse_id']} успешно заблокирован резерв под этап {stage_id}")
 
     def ship_stage(self, stage_id: int) -> None:
@@ -117,4 +74,14 @@ class ShipmentDispatchService(AbstractShipmentDispatchService):
                 status_id=ShipmentStatus.SHIPPED, 
                 sent_at=datetime.now(timezone.utc)
             )
+            
+            audit_data = ShipmentMapper.to_operation_history_data(
+                employee_id=stage.get("creator_id", 0),
+                operation_type="STAGE_SHIPPED",
+                entity_name="Stage",
+                entity_id=stage_id,
+                details={"from_warehouse_id": stage["from_warehouse_id"], "to_warehouse_id": stage["to_warehouse_id"]}
+            )
+            self.uow.history.log_operation(audit_data)
+            
             logging.info(f" Транспорт выехал со склада отправления. Этап {stage_id} переведен в статус SHIPPED")
