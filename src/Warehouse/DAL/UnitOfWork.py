@@ -6,6 +6,7 @@ if TYPE_CHECKING:
     from Warehouse.DAL.Repositories.EmployeeRepository import EmployeeRepository
     from Warehouse.DAL.Repositories.ReceiptRepository import ReceiptRepository
     from Warehouse.DAL.Repositories.TransitRepository import TransitRepository
+    from Warehouse.DAL.Repositories.HistoryRepository import HistoryRepository  # Добавлено для аннотации типов
 
 
 class UnitOfWork:
@@ -18,6 +19,7 @@ class UnitOfWork:
         self.employee: Optional["EmployeeRepository"] = None
         self.receipt: Optional["ReceiptRepository"] = None
         self.transit: Optional["TransitRepository"] = None
+        self.history: Optional["HistoryRepository"] = None  # Добавлено свойство репозитория аудита
 
     @property
     def session(self) -> Session:
@@ -33,12 +35,14 @@ class UnitOfWork:
         from Warehouse.DAL.Repositories.EmployeeRepository import EmployeeRepository
         from Warehouse.DAL.Repositories.ReceiptRepository import ReceiptRepository
         from Warehouse.DAL.Repositories.TransitRepository import TransitRepository
+        from Warehouse.DAL.Repositories.HistoryRepository import HistoryRepository  # Добавлено локально
         
         # Инициализируем репозитории и передаем им текущий экземпляр UOW
         self.dispatch = DispatchRepository(self)
         self.employee = EmployeeRepository(self)
         self.receipt = ReceiptRepository(self)
         self.transit = TransitRepository(self)
+        self.history = HistoryRepository(self)  # Инициализируем репозиторий истории операций
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -56,3 +60,4 @@ class UnitOfWork:
             self.employee = None
             self.receipt = None
             self.transit = None
+            self.history = None  # Очищаем ссылку на репозиторий аудита
