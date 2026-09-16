@@ -39,7 +39,7 @@ class Employee(Base):
     role_id: Mapped[int] = mapped_column(ForeignKey("Roles.id"), nullable=False)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     
-    # Исправлено: Добавлены технические поля авторизации согласно вашему DDL
+    # Добавлены технические поля авторизации согласно вашему DDL
     login: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
     
