@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from dependency_injector.wiring import Provide, inject
 
@@ -9,6 +10,17 @@ from Warehouse.Common.Logger import setup_logging
 from Warehouse.API.Auth import router as Auth_router
 from Warehouse.API.Shipments import router as Shipments_router
 
+
+# 🔥 НОВЫЙ СИНТАКСИС: Управляет жизненным циклом приложения FastAPI
+@asynccontextmanager
+async def lifespan(fastapi_app: FastAPI):
+    # Данный блок выполняется СТРОГО ОДИН РАЗ при старте веб-сервера uvicorn
+    setup_logging()
+    yield
+    # Данный блок выполнится при штатной остановке сервера (если нужно закрыть коннекты)
+    pass
+
+
 @inject
 def test_console_run(auth_service: AuthService = Provide[Container.auth_service]):
     """Тестовая функция для верификации графа зависимостей IoC в консоли."""
@@ -18,29 +30,29 @@ def test_console_run(auth_service: AuthService = Provide[Container.auth_service]
 
 
 def create_app() -> FastAPI:
-    """Фабрика веб-приложения для сервера uvicorn.""" #этого нет пока
-    # 1. Настраиваем систему логирования
-    setup_logging()
-
-    # 2. Создаем экземпляр IoC контейнера
+    """Фабрика веб-приложения для сервера uvicorn."""
+    
+    # 1. Инициализируем IoC контейнер
     container = Container()
     
-    # 3. КРИТИЧЕСКИ ВАЖНО: Связываем контейнер со всеми файлами, 
-    # где используется декоратор @inject (включая этот файл и слой API роутеров)
+    # 2. Связываем контейнер со всеми модулями
     container.wire(modules=[
         __name__,
         "Warehouse.API.Auth",
-        "Warehouse.API.Shipments"
+        "Warehouse.API.Shipments",
+        "Warehouse.API.Mappers.AuthMappers",
+        "Warehouse.API.Mappers.ShipmentsMappers"
     ])
     
-    # 4. Инициализируем фреймворк FastAPI
+    # 3. Инициализируем фреймворк FastAPI и передаем ему наш lifespan-менеджер
     fastapi_app = FastAPI(
         title="WMS Warehouse API",
         description="Система сквозного весового контроля и учета перемещения грузов",
-        version="1.0.0"
+        version="1.0.0",
+        lifespan=lifespan  # 🔥 Передаем lifespan вместо on_event
     )
     
-    # 5. Регистрируем эндпоинты в веб-сервере
+    # 4. Регистрируем эндпоинты в веб-сервере
     fastapi_app.include_router(Auth_router)
     fastapi_app.include_router(Shipments_router)
     
@@ -55,8 +67,6 @@ app = create_app()
 
 # Блок ручного запуска из консоли (команда: python main.py)
 if __name__ == "__main__":
+    setup_logging()  # Инициализация логов один раз только при ручном старте CLI
     print("Вызов приложения из CLI консоли...")
-    # Так как при прямом вызове python main.py фабрика create_app уже отработала 
-    # в глобальной области видимости, контейнер уже создал wire-связи с __name__.
-    # Мы можем сразу безопасно вызвать тестовый метод.
     test_console_run()

@@ -10,19 +10,19 @@ from Warehouse.BLL.Services.ShipmentService.ShipmentReceiptService import Shipme
 
 
 class Container(containers.DeclarativeContainer):
-    # Конфигурация явного wiring_config теперь расширена на весь веб-слой
+    # Конфигурация явного wiring_config теперь расширена на роутеры и мапперы
     wiring_config = containers.WiringConfiguration(modules=[
         "main",
         "Warehouse.API.Auth",
-        "Warehouse.API.Shipments"
+        "Warehouse.API.Shipments",
+        "Warehouse.API.Mappers.AuthMappers",
+        "Warehouse.API.Mappers.ShipmentsMappers"
     ])
 
     # 1. Инфраструктурные зависимости (Фабрика сессий)
     session_factory = providers.Object(session_factory)
 
     # 2. DAL: Unit of Work 
-    # ThreadSafeSingleton гарантирует, что все сервисы будут разделять 
-    # ОДНУ И ТУ ЖЕ сессию SQLAlchemy и одну транзакцию в рамках выполнения операции.
     uow = providers.ThreadSafeSingleton(
         UnitOfWork,
         session_factory=session_factory,
