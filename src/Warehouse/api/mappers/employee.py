@@ -1,5 +1,5 @@
-from ..DTO import EmployeeDTO
-from ..Entities import Employee
+from warehouse.api.dto import EmployeeDTO
+from warehouse.dal.entities import Employee
 
 
 def to_employee(e: Employee) -> EmployeeDTO:
