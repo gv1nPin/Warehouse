@@ -12,7 +12,7 @@ dependency-injector==4.45.0
 # Веб-слой (API)
 fastapi==0.115.8
 pydantic==2.10.6
-# uvicorn==0.34.0
+uvicorn==0.34.0
 
 # Утилиты и конфигурация
 python-dotenv==1.2.2
