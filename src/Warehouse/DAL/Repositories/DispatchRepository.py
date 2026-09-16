@@ -70,7 +70,7 @@ class DispatchRepository:
             stage.status_id = status_id
 
     def mark_stage_as_shipped(self, stage_id: int, status_id: int, sent_at: datetime) -> None:
-        # Убрали скрытый импорт BLL бизнес-логики. Статус теперь прокидывается сверху.
+        # Статус теперь прокидывается сверху.
         stmt = select(ShipmentStage).where(ShipmentStage.id == stage_id)
         stage = self.uow.session.scalars(stmt).first()
         if stage:
