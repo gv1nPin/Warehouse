@@ -3,7 +3,7 @@ from contextlib import contextmanager
 from dotenv import load_dotenv
 from sqlalchemy import URL, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
-
+# загружается env.example
 load_dotenv()
 
 DATABASE_URL = URL.create(
