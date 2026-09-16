@@ -1,7 +1,7 @@
 from sqlalchemy import ForeignKey, Identity, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from ..database import Base
+from Warehouse.DAL.Database import Base
 
 
 class RolePermission(Base):

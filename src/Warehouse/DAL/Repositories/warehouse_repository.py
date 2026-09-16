@@ -5,9 +5,9 @@ from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session, joinedload
 
-from ..DTO import StockItemDTO, WarehouseDTO
-from ..Entities import Product, StockOnWarehouse, Warehouse
-from .mappers import to_stock_item, to_warehouse
+from Warehouse.API.DTO import StockItemDTO, WarehouseDTO
+from Warehouse.DAL.Entities import Product, StockOnWarehouse, Warehouse
+from Warehouse.API.Mappers import to_stock_item, to_warehouse
 
 
 class WarehouseRepository:

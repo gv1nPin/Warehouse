@@ -4,7 +4,7 @@ from decimal import Decimal
 from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Identity, Numeric, Text, false, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from ..database import Base
+from Warehouse.DAL.Database import Base
 
 
 class Warehouse(Base):

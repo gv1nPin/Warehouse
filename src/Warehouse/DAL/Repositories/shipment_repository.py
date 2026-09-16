@@ -5,10 +5,10 @@ from decimal import Decimal
 from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from ..constants import ACTIVE_STATUSES
-from ..DTO import NewStage, RouteDTO, ShipmentDTO
-from ..Entities import Product, Shipment, ShipmentStage, StageItem, Status
-from .mappers import to_route, to_shipment
+from Warehouse.Common.Constants import ACTIVE_STATUSES
+from Warehouse.API.DTO import NewStage, RouteDTO, ShipmentDTO
+from Warehouse.DAL.Entities import Product, Shipment, ShipmentStage, StageItem, Status
+from Warehouse.API.Mappers.Mappers import to_route, to_shipment
 
 _ROUTE_OPTIONS = (
     joinedload(ShipmentStage.shipment).joinedload(Shipment.status),

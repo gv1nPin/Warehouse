@@ -1,9 +1,9 @@
 from sqlalchemy import exists, select, update
 from sqlalchemy.orm import Session, joinedload
 
-from ..DTO import EmployeeAuthDTO, EmployeeDTO
-from ..Entities import Employee, Permission, Role, RolePermission
-from .mappers import to_employee
+from Warehouse.API.DTO import EmployeeAuthDTO, EmployeeDTO
+from Warehouse.DAL.Entities import Employee, Permission, Role, RolePermission
+from Warehouse.API.Mappers import to_employee
 
 
 class EmployeeRepository:

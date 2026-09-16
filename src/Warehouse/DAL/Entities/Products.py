@@ -1,4 +1,3 @@
-# src/Warehouse/DAL/Entities/Products.py
 from datetime import datetime, timezone
 from decimal import Decimal
 from sqlalchemy import String, Boolean, ForeignKey, Numeric, DateTime

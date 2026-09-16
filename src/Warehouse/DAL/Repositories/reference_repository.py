@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..Entities import Measurement, Role, Status
+from Warehouse.DAL.Entities.references import Measurement, Role, Status
 
 
 class ReferenceRepository:

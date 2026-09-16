@@ -8,7 +8,7 @@ from ..DTO import (
     StockItemDTO,
     WarehouseDTO,
 )
-from ..Entities import Employee, Shipment, ShipmentStage, StageItem, StockOnWarehouse, Warehouse
+from src.Warehouse.DAL.Entities import Employee, Shipment, ShipmentStage, StageItem, StockOnWarehouse, Warehouse
 
 
 def to_employee(e: Employee) -> EmployeeDTO:
