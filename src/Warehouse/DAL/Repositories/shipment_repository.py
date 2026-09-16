@@ -4,9 +4,9 @@ from datetime import date
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload, selectinload
 
-from ..DTO import NewStage, ShipmentDTO
-from ..Entities import Shipment, ShipmentStage, StageItem
-from ..Mappers import to_shipment
+from warehouse.api.dto import NewStage, ShipmentDTO
+from warehouse.dal.entities import Shipment, ShipmentStage, StageItem
+from warehouse.api.mappers import to_shipment
 from .base_repository import BaseRepository
 from .shipment_stage_repository import ITEMS_OPTION, STAGE_OPTIONS
 

@@ -1,8 +1,8 @@
 from sqlalchemy import select
 
-from ..DTO import WarehouseDTO
-from ..Entities import Warehouse
-from ..Mappers import to_warehouse
+from warehouse.api.dto import WarehouseDTO
+from warehouse.dal.entities import Warehouse
+from warehouse.api.mappers import to_warehouse
 from .base_repository import BaseRepository
 
 
