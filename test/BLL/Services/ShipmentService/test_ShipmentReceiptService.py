@@ -4,7 +4,7 @@ from datetime import datetime
 from unittest.mock import Mock, patch
 
 from Warehouse.Common import ShipmentStatus
-from src.Warehouse.BLL.Services.ShipmentService.ShipmentReceiptService import (
+from src.Warehouse.BLL.Services.shipment_service.ShipmentReceiptService import (
     ShipmentReceiptService,
     BusinessLogicException,
     AccessDeniedException,

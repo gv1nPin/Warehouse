@@ -4,7 +4,7 @@ from sqlalchemy import ForeignKey, Integer, String, DateTime, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
-from Warehouse.DAL.Entities.Base.Declarative import Base
+from warehouse.DAL.entities.base.declarative import Base
 
 class OperationHistory(Base):
     __tablename__ = "operation_history"

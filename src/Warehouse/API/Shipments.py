@@ -3,17 +3,17 @@ from typing import List
 from dependency_injector.wiring import inject, Provide
 
 from container import Container
-from Warehouse.API.Dependencies import PermissionChecker
-from Warehouse.API.Schemas.ShipmentsDto import (
+from warehouse.API.Dependencies import PermissionChecker
+from warehouse.API.Schemas.ShipmentsDto import (
     ShipmentDraftCreateInputDTO, 
     ItemToStageAddInputDTO, 
     ActualQuantityInputDTO,
     IncomingStageOutputDTO,
     BaseActionResponseDTO
 )
-from Warehouse.BLL.Services.ShipmentService.ShipmentDispatchService import ShipmentDispatchService
-from Warehouse.BLL.Services.ShipmentService.ShipmentReceiptService import ShipmentReceiptService
-from Warehouse.API.Mappers.ShipmentsMappers import ShipmentMapper  # 🔥 Внедряем маппер
+from warehouse.BLL.Services.shipment_service.ShipmentDispatchService import ShipmentDispatchService
+from warehouse.BLL.Services.shipment_service.ShipmentReceiptService import ShipmentReceiptService
+from warehouse.API.Mappers.ShipmentsMappers import ShipmentMapper  # 🔥 Внедряем маппер
 
 router = APIRouter(prefix="/shipments", tags=["Warehouse Shipments"])
 

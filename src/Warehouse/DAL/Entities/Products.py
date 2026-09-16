@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from sqlalchemy import String, Boolean, ForeignKey, Numeric, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
-from Warehouse.DAL.Entities.Base import Base 
+from warehouse.dal.entities.base import Base 
 
 class Product(Base):
     __tablename__ = "Products"

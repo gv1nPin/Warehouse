@@ -1,5 +1,5 @@
 from typing import Dict, Any
-from Warehouse.DAL.Entities.OperationHistory import OperationHistory
+from warehouse.DAL.entities.operation_history import OperationHistory
 
 class HistoryRepository:
     def __init__(self, session):

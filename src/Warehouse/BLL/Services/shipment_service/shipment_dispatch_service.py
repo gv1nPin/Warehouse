@@ -1,9 +1,9 @@
 import logging
 from datetime import date, datetime, timezone
 from typing import List
-from Warehouse.BLL.Interfaces.ShipmentService import AbstractShipmentDispatchService
-from Warehouse.Common import ShipmentStatus
-from Warehouse.API.Mappers.ShipmentsMappers import ShipmentMapper
+from warehouse.BLL.Interfaces.ShipmentService import AbstractShipmentDispatchService
+from warehouse.Common import ShipmentStatus
+from warehouse.API.Mappers.ShipmentsMappers import ShipmentMapper
 
 class BusinessLogicException(Exception): pass
 class InsufficientStockException(Exception): pass

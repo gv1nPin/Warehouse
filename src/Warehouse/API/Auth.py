@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from dependency_injector.wiring import inject, Provide
 
 from container import Container
-from Warehouse.BLL.Services.AuthService.AuthService import AuthService, AuthException
-from Warehouse.API.Schemas.AuthDto import EmployeeRegisterInputDTO, LoginInputDTO, TokenOutputDTO
-from Warehouse.API.Mappers.AuthMappers import AuthMapper  # Внедряем маппер
+from warehouse.BLL.Services.AuthService.AuthService import AuthService, AuthException
+from warehouse.API.Schemas.AuthDto import EmployeeRegisterInputDTO, LoginInputDTO, TokenOutputDTO
+from warehouse.API.Mappers.AuthMappers import AuthMapper  # Внедряем маппер
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 

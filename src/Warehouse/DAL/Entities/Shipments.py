@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Optional
 from sqlalchemy import ForeignKey, Numeric, DateTime, Date, String
 from sqlalchemy.orm import Mapped, mapped_column
-from Warehouse.DAL.Entities.Base import Base  # Импортируем общий Base
+from warehouse.DAL.entities.Base import Base  # Импортируем общий Base
 
 
 class Shipment(Base):

@@ -1,12 +1,12 @@
 from dependency_injector import containers, providers
 from Warehouse.DAL.Database import session_factory
-from Warehouse.DAL.UnitOfWork import UnitOfWork
+from Warehouse.DAL.unit_of_work import UnitOfWork
 
 # Импортируем классы сервисов бизнес-логики BLL
 from Warehouse.BLL.Services.AuthService.AuthService import AuthService
-from Warehouse.BLL.Services.ShipmentService.ShipmentDispatchService import ShipmentDispatchService
-from Warehouse.BLL.Services.ShipmentService.ShipmentTransitCoordinator import ShipmentTransitCoordinator
-from Warehouse.BLL.Services.ShipmentService.ShipmentReceiptService import ShipmentReceiptService
+from Warehouse.BLL.Services.shipment_service.ShipmentDispatchService import ShipmentDispatchService
+from Warehouse.BLL.Services.shipment_service.ShipmentTransitCoordinator import ShipmentTransitCoordinator
+from Warehouse.BLL.Services.shipment_service.ShipmentReceiptService import ShipmentReceiptService
 
 
 class Container(containers.DeclarativeContainer):

@@ -3,7 +3,7 @@ from datetime import date, datetime, timedelta
 from unittest.mock import Mock, patch
 
 from Warehouse.Common import ShipmentStatus
-from src.Warehouse.BLL.Services.ShipmentService.ShipmentDispatchService import (
+from src.Warehouse.BLL.Services.shipment_service.ShipmentDispatchService import (
     ShipmentDispatchService,
     BusinessLogicException,
     InsufficientStockException,

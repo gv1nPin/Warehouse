@@ -1,6 +1,6 @@
 from typing import List, Dict, Any, Optional
 from datetime import date
-from Warehouse.API.Schemas.ShipmentsDto import IncomingStageOutputDTO
+from warehouse.API.Schemas.ShipmentsDto import IncomingStageOutputDTO
 
 class ShipmentMapper:
     @staticmethod

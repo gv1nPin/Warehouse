@@ -1,7 +1,7 @@
 from sqlalchemy import String, ForeignKey, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from Warehouse.DAL.Entities.Base import Base
-from Warehouse.DAL.Entities.Warehouses import Warehouse, Role
+from warehouse.DAL.entities.base import Base
+from warehouse.DAL.entities.Warehouses import warehouse, Role
 
 
 class Employee(Base):

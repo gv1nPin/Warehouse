@@ -2,11 +2,11 @@ from typing import Optional, TYPE_CHECKING
 from sqlalchemy.orm import Session
 
 if TYPE_CHECKING:
-    from Warehouse.DAL.Repositories.DispatchRepository import DispatchRepository
-    from Warehouse.DAL.Repositories.EmployeeRepository import EmployeeRepository
-    from Warehouse.DAL.Repositories.ReceiptRepository import ReceiptRepository
-    from Warehouse.DAL.Repositories.TransitRepository import TransitRepository
-    from Warehouse.DAL.Repositories.HistoryRepository import HistoryRepository  # Добавлено для аннотации типов
+    from warehouse.DAL.Repositories.dispatch_repository import DispatchRepository
+    from warehouse.DAL.Repositories.employee_repository import EmployeeRepository
+    from warehouse.DAL.Repositories.receipt_repository import ReceiptRepository
+    from warehouse.DAL.Repositories.transit_repository import TransitRepository
+    from warehouse.DAL.Repositories.history_repository import HistoryRepository  # Добавлено для аннотации типов
 
 
 class UnitOfWork:
@@ -31,11 +31,11 @@ class UnitOfWork:
         self._session = self.session_factory()
         
         # Локальный импорт классов репозиториев в рантайме для исключения циклических зависимостей
-        from Warehouse.DAL.Repositories.DispatchRepository import DispatchRepository
-        from Warehouse.DAL.Repositories.EmployeeRepository import EmployeeRepository
-        from Warehouse.DAL.Repositories.ReceiptRepository import ReceiptRepository
-        from Warehouse.DAL.Repositories.TransitRepository import TransitRepository
-        from Warehouse.DAL.Repositories.HistoryRepository import HistoryRepository  # Добавлено локально
+        from warehouse.DAL.Repositories.dispatch_repository import DispatchRepository
+        from warehouse.DAL.Repositories.employee_repository import EmployeeRepository
+        from warehouse.DAL.Repositories.receipt_repository import ReceiptRepository
+        from warehouse.DAL.Repositories.transit_repository import TransitRepository
+        from warehouse.DAL.Repositories.history_repository import HistoryRepository  # Добавлено локально
         
         # Инициализируем репозитории и передаем им текущий экземпляр UOW
         self.dispatch = DispatchRepository(self)

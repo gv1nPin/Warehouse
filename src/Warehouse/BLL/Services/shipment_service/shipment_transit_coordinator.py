@@ -1,11 +1,11 @@
 import logging
 from typing import Dict
-from Warehouse.Common import ShipmentStatus
-from Warehouse.BLL.Interfaces.ShipmentService import (
+from warehouse.Common import ShipmentStatus
+from warehouse.BLL.Interfaces.ShipmentService import (
     AbstractShipmentTransitCoordinator, 
     AbstractShipmentDispatchService
 )
-from Warehouse.API.Mappers.ShipmentsMappers import ShipmentMapper
+from warehouse.API.Mappers.ShipmentsMappers import ShipmentMapper
 
 class BusinessLogicException(Exception): pass
 class EntityNotFoundException(Exception): pass 
