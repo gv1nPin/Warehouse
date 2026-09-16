@@ -1,5 +1,7 @@
-from .ShipmentStatuses import ShipmentStatus
+from .constants import PermissionName, RoleName, StatusName
 
 __all__ = [
-    "ShipmentStatus",
+    "PermissionName",
+    "RoleName",
+    "StatusName",
 ]

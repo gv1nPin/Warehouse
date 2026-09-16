@@ -1,10 +1,15 @@
 from sqlalchemy.orm import Session, sessionmaker
 
-from .database import SessionLocal
+from .database import session_factory as default_session_factory
 from .Repositories import (
     EmployeeRepository,
-    ReferenceRepository,
+    MeasurementRepository,
+    ProductRepository,
+    RoleRepository,
     ShipmentRepository,
+    ShipmentStageRepository,
+    StageItemRepository,
+    StatusRepository,
     StockRepository,
     WarehouseRepository,
 )
@@ -13,30 +18,41 @@ from .Repositories import (
 class UnitOfWork:
     """Одна транзакция и все репозитории на ней.
 
-    with UnitOfWork() as uow:
+    with uow:
         me = uow.employees.get_by_id(5)
-        routes = uow.shipments.list_routes_for_warehouse(me.warehouse_id)
+        stages = uow.stages.list_for_warehouse(me.warehouse_id)
 
     При выходе без ошибок — commit, при исключении — rollback.
+    Один объект можно использовать повторно: каждый `with` открывает новую сессию.
     """
 
     session: Session
     employees: EmployeeRepository
+    roles: RoleRepository
+    statuses: StatusRepository
+    measurements: MeasurementRepository
     warehouses: WarehouseRepository
+    products: ProductRepository
     stock: StockRepository
     shipments: ShipmentRepository
-    references: ReferenceRepository
+    stages: ShipmentStageRepository
+    stage_items: StageItemRepository
 
-    def __init__(self, session_factory: sessionmaker[Session] = SessionLocal):
+    def __init__(self, session_factory: sessionmaker[Session] = default_session_factory):
         self._session_factory = session_factory
 
     def __enter__(self) -> "UnitOfWork":
         self.session = self._session_factory()
         self.employees = EmployeeRepository(self.session)
+        self.roles = RoleRepository(self.session)
+        self.statuses = StatusRepository(self.session)
+        self.measurements = MeasurementRepository(self.session)
         self.warehouses = WarehouseRepository(self.session)
+        self.products = ProductRepository(self.session)
         self.stock = StockRepository(self.session)
         self.shipments = ShipmentRepository(self.session)
-        self.references = ReferenceRepository(self.session)
+        self.stages = ShipmentStageRepository(self.session)
+        self.stage_items = StageItemRepository(self.session)
         return self
 
     def __exit__(self, exc_type, exc, tb) -> None:

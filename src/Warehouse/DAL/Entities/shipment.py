@@ -4,7 +4,7 @@ from decimal import Decimal
 from sqlalchemy import DateTime, ForeignKey, Identity, Numeric, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from Warehouse.DAL.Entities.Base import Base
+from .base import Base
 
 
 class Shipment(Base):

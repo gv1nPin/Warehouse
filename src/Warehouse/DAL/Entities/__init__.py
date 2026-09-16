@@ -1,22 +1,25 @@
-from Warehouse.DAL.Entities.Base import Base
+"""Модели SQLAlchemy. Импортируются все сразу, чтобы связи (relationship) по строковым именам находили друг друга."""
 
-# 2. Импортируем все модели из их новых персональных файлов
-from Warehouse.DAL.Entities.Warehouses import RolePermission, Role, Permission, Warehouse
-from Warehouse.DAL.Entities.Employees import Employee
-from Warehouse.DAL.Entities.Products import Product, StockOnWarehouse
-from Warehouse.DAL.Entities.Shipments import Shipment, ShipmentStage, StageItem
+from .base import Base
+from .employee import Employee
+from .product import Product
+from .reference import Measurement, Permission, Role, RolePermission, Status
+from .shipment import Shipment, ShipmentStage, StageItem
+from .stock import StockOnWarehouse
+from .warehouse import Warehouse
 
-# 3. Экспортируем всё наружу единым списком
 __all__ = [
     "Base",
-    "RolePermission",
-    "Role",
-    "Permission",
-    "Warehouse",
     "Employee",
+    "Measurement",
+    "Permission",
     "Product",
-    "StockOnWarehouse",
+    "Role",
+    "RolePermission",
     "Shipment",
     "ShipmentStage",
     "StageItem",
+    "Status",
+    "StockOnWarehouse",
+    "Warehouse",
 ]
