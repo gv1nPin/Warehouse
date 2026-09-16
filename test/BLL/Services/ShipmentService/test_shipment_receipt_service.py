@@ -3,8 +3,8 @@ import pytest
 from datetime import datetime
 from unittest.mock import Mock, patch
 
-from Warehouse.Common import ShipmentStatus
-from src.Warehouse.BLL.Services.shipment_service.ShipmentReceiptService import (
+from warehouse.common import ShipmentStatus
+from src.warehouse.bll.services.shipment_service.shipment_receipt_service import (
     ShipmentReceiptService,
     BusinessLogicException,
     AccessDeniedException,

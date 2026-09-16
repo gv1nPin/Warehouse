@@ -13,10 +13,10 @@ class Container(containers.DeclarativeContainer):
     # Конфигурация явного wiring_config теперь расширена на роутеры и мапперы
     wiring_config = containers.WiringConfiguration(modules=[
         "main",
-        "Warehouse.API.Auth",
-        "Warehouse.API.Shipments",
-        "Warehouse.API.Mappers.AuthMappers",
-        "Warehouse.API.Mappers.ShipmentsMappers"
+        "warehouse.api.auth",
+        "warehouse.api.shipments",
+        "warehouse.api.mappers.auth_mappers",
+        "warehouse.api.mappers.shipments_mappers"
     ])
 
     # 1. Инфраструктурные зависимости (Фабрика сессий)

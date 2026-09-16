@@ -1,8 +1,8 @@
 import pytest
 from unittest.mock import Mock
 
-from Warehouse.Common import ShipmentStatus
-from src.Warehouse.BLL.Services.shipment_service.ShipmentTransitCoordinator import ShipmentTransitCoordinator
+from warehouse.common import ShipmentStatus
+from src.warehouse.bll.services.shipment_service.shipment_transit_coordinator import ShipmentTransitCoordinator
 
 
 @pytest.fixture

@@ -38,10 +38,10 @@ def create_app() -> FastAPI:
     # 2. Связываем контейнер со всеми модулями
     container.wire(modules=[
         __name__,
-        "Warehouse.API.Auth",
-        "Warehouse.API.Shipments",
-        "Warehouse.API.Mappers.AuthMappers",
-        "Warehouse.API.Mappers.ShipmentsMappers"
+        "warehouse.api.auth",
+        "warehouse.api.shipments",
+        "warehouse.api.mappers.auth_mappers",
+        "warehouse.api.mappers.shipments_mappers"
     ])
     
     # 3. Инициализируем фреймворк FastAPI и передаем ему наш lifespan-менеджер

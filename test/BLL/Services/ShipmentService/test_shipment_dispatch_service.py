@@ -2,8 +2,8 @@ import pytest
 from datetime import date, datetime, timedelta
 from unittest.mock import Mock, patch
 
-from Warehouse.Common import ShipmentStatus
-from src.Warehouse.BLL.Services.shipment_service.ShipmentDispatchService import (
+from warehouse.common import ShipmentStatus
+from src.warehouse.bll.services.shipment_service.shipment_dispatch_service import (
     ShipmentDispatchService,
     BusinessLogicException,
     InsufficientStockException,
