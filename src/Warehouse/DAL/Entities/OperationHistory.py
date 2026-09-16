@@ -4,8 +4,7 @@ from sqlalchemy import ForeignKey, Integer, String, DateTime, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
-# Предполагается, что ваша базовая модель импортируется так:
-from Warehouse.DAL.Entities.Base.declarative import Base
+from Warehouse.DAL.Entities.Base.Declarative import Base
 
 class OperationHistory(Base):
     __tablename__ = "operation_history"
