@@ -49,7 +49,7 @@ class PermissionChecker:
             return payload
             
         except AuthException as e:
-            # Перехватываем ошибки протухшего времени жизни или поддельной цифровой подписи токена
+            # Перехватываем ошибки истекшего времени жизни или поддельной цифровой подписи токена
             logging.warning(f"Авторизация сорвалась: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
