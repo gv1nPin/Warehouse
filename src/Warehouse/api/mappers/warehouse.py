@@ -1,5 +1,5 @@
-from ..DTO import StockItemDTO, WarehouseDTO
-from ..Entities import StockOnWarehouse, Warehouse
+from warehouse.api.dto import StockItemDTO, WarehouseDTO
+from warehouse.dal.entities import StockOnWarehouse, Warehouse
 
 
 def to_warehouse(w: Warehouse) -> WarehouseDTO:
