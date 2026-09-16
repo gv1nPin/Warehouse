@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session, sessionmaker
 
 from .database import session_factory as default_session_factory
-from .Repositories import (
+from .repositories import (
     EmployeeRepository,
     MeasurementRepository,
     ProductRepository,
