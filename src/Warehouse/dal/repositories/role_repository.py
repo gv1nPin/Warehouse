@@ -1,6 +1,6 @@
 from sqlalchemy import select
 
-from warehouse.dal.entities import Role
+from Warehouse.dal.entities import Role
 from .base_repository import BaseRepository
 
 

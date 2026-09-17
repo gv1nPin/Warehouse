@@ -1,7 +1,7 @@
 from dependency_injector import containers, providers
 
-from warehouse.dal.database import session_factory
-from warehouse.dal.unit_of_work import UnitOfWork
+from Warehouse.dal.database import session_factory
+from Warehouse.dal.unit_of_work import UnitOfWork
 
 
 class Container(containers.DeclarativeContainer):

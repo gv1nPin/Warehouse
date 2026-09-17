@@ -1,6 +1,6 @@
 from sqlalchemy import select
 
-from warehouse.dal.entities import Status
+from Warehouse.dal.entities import Status
 from .base_repository import BaseRepository
 
 

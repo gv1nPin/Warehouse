@@ -1,9 +1,9 @@
 from sqlalchemy import exists, select
 from sqlalchemy.orm import contains_eager
 
-from warehouse.api.dto import EmployeeAuthDTO, EmployeeDTO
-from warehouse.dal.entities import Employee, Permission, Role, RolePermission
-from warehouse.api.mappers import to_employee
+from Warehouse.api.dto import EmployeeAuthDTO, EmployeeDTO
+from Warehouse.dal.entities import Employee, Permission, Role, RolePermission
+from Warehouse.api.mappers import to_employee
 from .base_repository import BaseRepository
 
 
