@@ -2,6 +2,7 @@
 
 from .base_repository import BaseRepository
 from .employee_repository import EmployeeRepository
+from .history_repository import HistoryRepository
 from .measurement_repository import MeasurementRepository
 from .product_repository import ProductRepository
 from .role_repository import RoleRepository
@@ -15,6 +16,7 @@ from .warehouse_repository import WarehouseRepository
 __all__ = [
     "BaseRepository",
     "EmployeeRepository",
+    "HistoryRepository",
     "MeasurementRepository",
     "ProductRepository",
     "RoleRepository",

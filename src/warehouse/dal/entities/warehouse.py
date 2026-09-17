@@ -1,10 +1,13 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import Identity, Text, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from warehouse.dal.entities.employee import Employee
-from warehouse.dal.entities.stock import StockOnWarehouse
-
 from .base import Base
+
+if TYPE_CHECKING:
+    from warehouse.dal.entities.employee import Employee
+    from warehouse.dal.entities.stock import StockOnWarehouse
 
 
 class Warehouse(Base):

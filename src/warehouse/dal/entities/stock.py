@@ -1,13 +1,15 @@
 from datetime import datetime
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Numeric, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from warehouse.dal.entities.product import Product
-from warehouse.dal.entities.warehouse import Warehouse
-
 from .base import Base
+
+if TYPE_CHECKING:
+    from warehouse.dal.entities.product import Product
+    from warehouse.dal.entities.warehouse import Warehouse
 
 
 class StockOnWarehouse(Base):

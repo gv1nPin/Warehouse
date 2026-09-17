@@ -1,10 +1,13 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import ForeignKey, Identity, Text, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from warehouse.dal.entities.stock import StockOnWarehouse
-from warehouse.dal.entities.reference import Measurement
-
 from .base import Base
+
+if TYPE_CHECKING:
+    from warehouse.dal.entities.stock import StockOnWarehouse
+    from warehouse.dal.entities.reference import Measurement
 
 
 class Product(Base):
