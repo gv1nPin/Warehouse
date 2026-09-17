@@ -3,7 +3,8 @@
 Запуск из папки src:  python main.py
 Проверка только читает данные и ничего не меняет в БД.
 """
-
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
 from dependency_injector.wiring import Provide, inject
 from sqlalchemy import text
 from sqlalchemy.orm import configure_mappers
@@ -11,7 +12,16 @@ from sqlalchemy.orm import configure_mappers
 from container import Container
 from warehouse.common import RoleName
 from warehouse.dal.unit_of_work import UnitOfWork
+from warehouse.common.logger import setup_logging
 
+
+@asynccontextmanager
+async def lifespan(fastapi_app: FastAPI):
+    # Данный блок выполняется СТРОГО ОДИН РАЗ при старте веб-сервера uvicorn
+    setup_logging()
+    yield
+    # Данный блок выполнится при штатной остановке сервера (если нужно закрыть коннекты)
+    pass
 
 def check(name: str, func) -> bool:
     try:
