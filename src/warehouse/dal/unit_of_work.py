@@ -2,11 +2,11 @@ from typing import Optional, TYPE_CHECKING
 from sqlalchemy.orm import Session
 
 if TYPE_CHECKING:
-    from warehouse.DAL.Repositories.dispatch_repository import DispatchRepository
-    from warehouse.DAL.Repositories.employee_repository import EmployeeRepository
-    from warehouse.DAL.Repositories.receipt_repository import ReceiptRepository
-    from warehouse.DAL.Repositories.transit_repository import TransitRepository
-    from warehouse.DAL.Repositories.history_repository import HistoryRepository  # Добавлено для аннотации типов
+    from warehouse.dal.repositories.dispatch_repository import DispatchRepository
+    from warehouse.dal.repositories.employee_repository import EmployeeRepository
+    from warehouse.dal.repositories.receipt_repository import ReceiptRepository
+    from warehouse.dal.repositories.transit_repository import TransitRepository
+    from warehouse.dal.repositories.history_repository import HistoryRepository  # Добавлено для аннотации типов
 
 
 class UnitOfWork:
