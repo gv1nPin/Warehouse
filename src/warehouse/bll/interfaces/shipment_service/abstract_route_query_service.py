@@ -1,13 +1,8 @@
-# AbstractRouteQueryService.py
+# abstract_route_query_service.py
 
 from abc import ABC, abstractmethod
 
 from warehouse.api.dto import StageDTO
-
-
-class AccessDeniedError(Exception):
-    """Сотрудник пытается сделать то, на что у него нет прав."""
-    pass
 
 
 class AbstractRouteQueryService(ABC):
