@@ -3,8 +3,7 @@ from typing import Any, Dict, Optional
 from sqlalchemy import ForeignKey, Integer, String, DateTime, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
-
-from warehouse.dal.entities.base.declarative import Base
+from .base import Base
 
 class OperationHistory(Base):
     __tablename__ = "operation_history"

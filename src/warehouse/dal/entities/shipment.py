@@ -4,6 +4,11 @@ from decimal import Decimal
 from sqlalchemy import DateTime, ForeignKey, Identity, Numeric, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from warehouse.dal.entities.employee import Employee
+from warehouse.dal.entities.product import Product
+from warehouse.dal.entities.reference import Status
+from warehouse.dal.entities.warehouse import Warehouse
+
 from .base import Base
 
 
