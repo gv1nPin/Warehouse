@@ -1,9 +1,9 @@
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from Warehouse.api.dto import ProductDTO
-from Warehouse.dal.entities import Product
-from Warehouse.api.mappers import to_product
+from warehouse.api.dto import ProductDTO
+from warehouse.dal.entities import Product
+from warehouse.api.mappers import to_product
 from .base_repository import BaseRepository
 
 

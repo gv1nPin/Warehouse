@@ -1,6 +1,6 @@
 from sqlalchemy import select
 
-from Warehouse.dal.entities import Measurement
+from warehouse.dal.entities import Measurement
 from .base_repository import BaseRepository
 
 

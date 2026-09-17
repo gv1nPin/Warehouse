@@ -9,8 +9,8 @@ from sqlalchemy import text
 from sqlalchemy.orm import configure_mappers
 
 from container import Container
-from Warehouse.common import RoleName
-from Warehouse.dal.unit_of_work import UnitOfWork
+from warehouse.common import RoleName
+from warehouse.dal.unit_of_work import UnitOfWork
 
 
 def check(name: str, func) -> bool:

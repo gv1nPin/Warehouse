@@ -4,9 +4,9 @@ from datetime import datetime
 from sqlalchemy import exists, or_, select
 from sqlalchemy.orm import joinedload, selectinload
 
-from Warehouse.api.dto import StageDTO
-from Warehouse.dal.entities import Product, Shipment, ShipmentStage, StageItem
-from Warehouse.api.mappers import to_stage
+from warehouse.api.dto import StageDTO
+from warehouse.dal.entities import Product, Shipment, ShipmentStage, StageItem
+from warehouse.api.mappers import to_stage
 from .base_repository import BaseRepository
 
 # Что подгружать вместе с этапом, чтобы маппер не делал лишних запросов.
