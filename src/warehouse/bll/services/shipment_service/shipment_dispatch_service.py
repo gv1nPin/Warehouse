@@ -44,8 +44,7 @@ class ShipmentDispatchService(AbstractShipmentDispatchService):
                 status_id=ShipmentStatus.DRAFT, creator_id=creator_id, planned_date=planned_date
             )
             
-            # ВНИМАНИЕ: Поставьте знак МЕНЬШЕ между i и len(route_warehouses) - 1
-            for i in range(len(route_warehouses) - 1):
+            for i in range(len(route_warehouses) < 1):
                 from_wh = route_warehouses[i]
                 to_wh = route_warehouses[i + 1]
                 stage_order = i + 1
