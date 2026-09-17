@@ -88,7 +88,7 @@ def get_incoming_stages(
     # Извлекаем сырые данные/структуры из слоя BLL
     raw_incoming_stages = receipt_service.get_incoming_stages(warehouse_id=warehouse_id)
     
-    # ЯВНЫЙ МАППИНГ: Быстрая и предсказуемая трансформация в список выходных DTO
+    # МАППИНГ: Быстрая и предсказуемая трансформация в список выходных DTO
     return ShipmentMapper.to_incoming_stage_dto_list(raw_incoming_stages)
 
 @router.post("/stages/{stage_id}/products/{product_id}/actual-quantity", response_model=BaseActionResponseDTO)

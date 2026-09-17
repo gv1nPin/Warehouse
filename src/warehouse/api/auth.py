@@ -38,7 +38,7 @@ def login_employee(
             login=payload.login,
             plain_password=payload.password
         )
-        # ЯВНЫЙ МАППИНГ: Чистый и защищенный перевод данных в DTO
+        # МАППИНГ: Чистый и защищенный перевод данных в DTO
         return AuthMapper.to_token_output_dto(token_raw_data)
     except AuthException as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))

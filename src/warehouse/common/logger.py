@@ -8,7 +8,7 @@ def setup_logging():
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
-    # Шаблон: Время [УРОВЕНЬ] (Имя_Файла:Строка) -> Сообщение
+    # Время [УРОВЕНЬ] (Имя_Файла:Строка) -> Сообщение
     log_format = "%(asctime)s [%(levelname)s] (%(filename)s:%(lineno)d) -> %(message)s"
     date_format = "%Y-%m-%d %H:%M:%S"
 

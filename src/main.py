@@ -49,7 +49,7 @@ def create_app() -> FastAPI:
         title="WMS Warehouse API",
         description="Система сквозного весового контроля и учета перемещения грузов",
         version="1.0.0",
-        lifespan=lifespan  # 🔥 Передаем lifespan вместо on_event
+        lifespan=lifespan  # Передаем lifespan вместо on_event
     )
     
     # 4. Регистрируем эндпоинты в веб-сервере
