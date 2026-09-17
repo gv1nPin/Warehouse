@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from Warehouse.api.dto import EmployeeDTO
-from Warehouse.dal.unit_of_work import UnitOfWork
+from warehouse.api.dto import EmployeeDTO
+from warehouse.dal.unit_of_work import UnitOfWork
 
 
 @dataclass(frozen=True, slots=True)

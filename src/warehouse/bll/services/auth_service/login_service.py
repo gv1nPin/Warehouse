@@ -3,15 +3,15 @@ from datetime import datetime, timedelta, timezone
 
 import jwt
 
-from Warehouse.common.exceptions import AuthError
-from Warehouse.bll.interfaces.auth_service import (
+from warehouse.common.exceptions import AuthError
+from warehouse.bll.interfaces.auth_service import (
     AbstractAccessService,
     AbstractLoginService,
     TokenDTO,
     TokenPayloadDTO,
 )
-from Warehouse.common.security import verify_password
-from Warehouse.dal.unit_of_work import UnitOfWork
+from warehouse.common.security import verify_password
+from warehouse.dal.unit_of_work import UnitOfWork
 
 ALGORITHM = "HS256"
 INVALID_CREDENTIALS = "Неверный логин или пароль"

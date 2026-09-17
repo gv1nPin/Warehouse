@@ -1,7 +1,7 @@
-from Warehouse.common.exceptions import AccessDeniedError, NotFoundError
-from Warehouse.bll.interfaces.auth_service import AbstractAccessService, ActorDTO
-from Warehouse.common import PermissionName
-from Warehouse.dal.unit_of_work import UnitOfWork
+from warehouse.common.exceptions import AccessDeniedError, NotFoundError
+from warehouse.bll.interfaces.auth_service import AbstractAccessService, ActorDTO
+from warehouse.common import PermissionName
+from warehouse.dal.unit_of_work import UnitOfWork
 
 
 class AccessService(AbstractAccessService):
