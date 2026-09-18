@@ -33,5 +33,5 @@ pydantic==2.10.6
 uvicorn==0.34.0
 
 # Утилиты и конфигурация
->>>>>>> origin/main
+>>>>>>> 
 python-dotenv==1.2.2
