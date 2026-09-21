@@ -1,8 +1,7 @@
-# route_query_service.py
+from collections.abc import Callable, Collection
 
-from collections.abc import Callable
-
-from warehouse.api.dto import EmployeeDTO, StageDTO
+from warehouse.api.dto import ShipmentDTO, StageDTO
+from warehouse.bll.interfaces.auth_service import AbstractAccessService, ActorDTO
 from warehouse.bll.interfaces.shipment_service.abstract_route_query_service import (
     AbstractRouteQueryService,
 )
@@ -10,7 +9,7 @@ from warehouse.common import PermissionName, StatusName
 from warehouse.common.exceptions import AccessDeniedError, NotFoundError
 from warehouse.dal.unit_of_work import UnitOfWork
 
-# Активные маршруты — те, что ещё не приняты.
+# Маршрут ещё в работе: его пока не приняли.
 ACTIVE_STATUSES = (
     StatusName.DRAFT,
     StatusName.WAITING,
@@ -18,145 +17,93 @@ ACTIVE_STATUSES = (
     StatusName.SHIPPED,
 )
 
+# Кто видит все маршруты своего склада, а не только свои рейсы.
+WAREHOUSE_PERMISSIONS = frozenset(
+    {PermissionName.SHIPMENT_CREATE, PermissionName.SHIPMENT_ACCEPT}
+)
+
 
 class RouteQueryService(AbstractRouteQueryService):
+    """Просмотр маршрутов. Права проверяем от самых широких к самым узким:
+
+    employee:manage                   — все маршруты;
+    shipment:create / shipment:accept — маршруты своего склада;
+    остальные                         — только рейсы, где сотрудник водитель или приёмщик.
     """
-    Настоящий сервис просмотра маршрутов.
 
-    Главная идея: у сотрудника может быть несколько «ролей» (прав).
-    Проверяем их по очереди — от самых «широких» к самым «узким».
-    """
-
-    # Названия прав (permissions) берём из warehouse.common.PermissionName,
-    # чтобы не писать строки «руками» по всему коду.
-    PERM_MANAGE = PermissionName.EMPLOYEE_MANAGE   # полный доступ ко всему
-    PERM_CREATE = PermissionName.SHIPMENT_CREATE   # создаёт отгрузки
-    PERM_ACCEPT = PermissionName.SHIPMENT_ACCEPT   # принимает отгрузки
-
-    def __init__(self, uow_factory: Callable[[], UnitOfWork]):
-        """
-        uow_factory — функция, которая создаёт Unit of Work (транзакцию).
-        Мы её вызываем, когда нужно самим открыть транзакцию.
-        """
+    def __init__(
+        self, uow_factory: Callable[[], UnitOfWork], access: AbstractAccessService
+    ) -> None:
         self._uow_factory = uow_factory
+        self._access = access
 
-    # ------------------------------------------------------------------ #
-    #  ПУБЛИЧНЫЙ МЕТОД 1: список маршрутов                                #
-    # ------------------------------------------------------------------ #
     def list_routes(self, employee_id: int, only_active: bool = False) -> list[StageDTO]:
-        """Список маршрутов, доступных сотруднику."""
-
-        # Открываем свою транзакцию (метод её не принимает аргументом).
         with self._uow_factory() as uow:
+            actor = self._access.get_actor(uow, employee_id)
+            status_ids = self._status_ids(uow, ACTIVE_STATUSES) if only_active else None
 
-            # 1. Находим сотрудника.
-            employee = self._get_employee(uow, employee_id)
+            if self._access.is_admin(actor):
+                return uow.stages.list_all(status_ids=status_ids)
 
-            # 2. Узнаём список прав сотрудника (например: {"shipment:create"}).
-            permissions = set(uow.employees.get_permissions(employee_id))
+            if self._sees_whole_warehouse(actor):
+                return uow.stages.list_for_warehouse(
+                    warehouse_id=actor.employee.warehouse_id,
+                    status_ids=status_ids,
+                )
 
-            # 3. Выбираем, как именно искать маршруты.
-            #    Репозиторий сразу отдаёт DTO, товары в списке не нужны — только шапки.
-            return self._pick_stages_for_listing(uow, employee, permissions, only_active)
+            # Ни прав склада, ни админских: сотрудник видит только свои рейсы.
+            # Их может не быть — это пустой список, а не отказ в доступе.
+            return uow.stages.list_for_driver(
+                driver_id=actor.employee.id,
+                status_ids=status_ids,
+            )
 
-    # ------------------------------------------------------------------ #
-    #  ПУБЛИЧНЫЙ МЕТОД 2: один маршрут                                    #
-    # ------------------------------------------------------------------ #
     def get_route(self, employee_id: int, stage_id: int) -> StageDTO:
-        """Один маршрут вместе с товарами. Доступ — по тем же правилам."""
-
         with self._uow_factory() as uow:
+            actor = self._access.get_actor(uow, employee_id)
 
-            # 1. Сотрудник.
-            employee = self._get_employee(uow, employee_id)
-
-            # 2. Права.
-            permissions = set(uow.employees.get_permissions(employee_id))
-
-            # 3. Находим сам этап (сразу с товарами).
             stage = uow.stages.get_by_id(stage_id, with_items=True)
             if stage is None:
                 raise NotFoundError(f"Маршрут №{stage_id} не найден")
 
-            # 4. Проверяем, имеет ли сотрудник право смотреть ИМЕННО этот этап.
-            if not self._can_view_stage(employee, permissions, stage):
+            if not self._can_view_stage(actor, stage):
                 raise AccessDeniedError("Нет прав на просмотр этого маршрута")
 
             return stage
 
-    # ================================================================== #
-    #  ВНУТРЕННИЕ ХЕЛПЕРЫ                                                 #
-    # ================================================================== #
+    def get_shipment_progress(self, employee_id: int, shipment_id: int) -> ShipmentDTO:
+        with self._uow_factory() as uow:
+            actor = self._access.get_actor(uow, employee_id)
+
+            shipment = uow.shipments.get_by_id(shipment_id)
+            if shipment is None:
+                raise NotFoundError(f"Перевозка №{shipment_id} не найдена")
+
+            # Перевозку видно, если виден хотя бы один её этап.
+            if not any(self._can_view_stage(actor, stage) for stage in shipment.stages):
+                raise AccessDeniedError("Нет прав на просмотр этой перевозки")
+
+            return shipment
+
+    def _can_view_stage(self, actor: ActorDTO, stage: StageDTO) -> bool:
+        if self._access.is_admin(actor):
+            return True
+
+        if self._sees_whole_warehouse(actor) and actor.employee.warehouse_id in (
+            stage.from_warehouse.id,
+            stage.to_warehouse.id,
+        ):
+            return True
+
+        return actor.employee.id in (stage.driver_id, stage.acceptor_id)
 
     @staticmethod
-    def _get_employee(uow: UnitOfWork, employee_id: int) -> EmployeeDTO:
-        employee = uow.employees.get_by_id(employee_id)
-        if employee is None:
-            raise NotFoundError(f"Сотрудник №{employee_id} не найден или заблокирован")
-        return employee
+    def _sees_whole_warehouse(actor: ActorDTO) -> bool:
+        return bool(actor.permissions & WAREHOUSE_PERMISSIONS)
 
     @staticmethod
-    def _active_status_ids(uow: UnitOfWork) -> list[int]:
-        """id активных статусов (статусы ищем по имени, а не по числу)."""
-        ids = [uow.statuses.get_id(name) for name in ACTIVE_STATUSES]
+    def _status_ids(uow: UnitOfWork, names: Collection[StatusName]) -> list[int]:
+        """id статусов по именам. Неизвестные имена молча пропускаем:
+        это фильтр, а не действие, и падать из-за него не нужно."""
+        ids = (uow.statuses.get_id(name) for name in names)
         return [status_id for status_id in ids if status_id is not None]
-
-    def _pick_stages_for_listing(
-        self, uow: UnitOfWork, employee: EmployeeDTO, permissions: set[str], only_active: bool
-    ) -> list[StageDTO]:
-        """
-        Решает, какой запрос к репозиторию сделать,
-        в зависимости от прав сотрудника.
-        """
-        # None — без фильтра по статусам.
-        status_ids = self._active_status_ids(uow) if only_active else None
-
-        # --- Случай 1: полный доступ. Все маршруты. ---
-        if self.PERM_MANAGE in permissions:
-            return uow.stages.list_all(status_ids=status_ids)
-
-        # --- Случай 2: может создавать или принимать отгрузки.
-        #     Значит, видит маршруты СВОЕГО склада. ---
-        if self.PERM_CREATE in permissions or self.PERM_ACCEPT in permissions:
-            return uow.stages.list_for_warehouse(
-                warehouse_id=employee.warehouse_id,
-                status_ids=status_ids,
-            )
-
-        # --- Случай 3: сотрудник назначен водителем хоть где-то.
-        #     Показываем ТОЛЬКО его активные маршруты. ---
-        driver_stages = uow.stages.list_for_driver(
-            driver_id=employee.id,
-            status_ids=self._active_status_ids(uow),   # водителю — только активные
-        )
-        if driver_stages:
-            return driver_stages
-
-        # --- Случай 4: ничего из перечисленного — отказать. ---
-        raise AccessDeniedError("Нет прав на просмотр маршрутов")
-
-    def _can_view_stage(
-        self, employee: EmployeeDTO, permissions: set[str], stage: StageDTO
-    ) -> bool:
-        """
-        True, если сотруднику разрешено видеть этот конкретный этап.
-        Логика ровно такая же, как в _pick_stages_for_listing,
-        только проверяем ОДИН этап, а не список.
-        """
-        # 1. Полный доступ.
-        if self.PERM_MANAGE in permissions:
-            return True
-
-        # 2. Свой склад.
-        if self.PERM_CREATE in permissions or self.PERM_ACCEPT in permissions:
-            # Этап касается склада сотрудника?
-            # (склад может быть либо "откуда", либо "куда").
-            if employee.warehouse_id in (stage.from_warehouse.id, stage.to_warehouse.id):
-                return True
-
-        # 3. Он — водитель этого этапа.
-        if stage.driver_id == employee.id:
-            return True
-
-        # 4. Ничего не подошло.
-        return False

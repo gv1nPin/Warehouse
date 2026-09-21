@@ -1,33 +1,35 @@
-# abstract_route_query_service.py
-
 from abc import ABC, abstractmethod
 
-from warehouse.api.dto import StageDTO
+from warehouse.api.dto import ShipmentDTO, StageDTO
 
 
 class AbstractRouteQueryService(ABC):
-    """
-    Абстрактный сервис для ПРОСМОТРА маршрутов (путей/этапов отгрузки).
+    """Просмотр маршрутов и перевозок.
 
-    Здесь только список методов, которые обязан реализовать наследник.
-    Никакой логики внутри нет.
+    Транзакцию открывает сам, поэтому вызывается прямо из web:
+
+        routes = route_query.list_routes(employee_id, only_active=True)
+        route = route_query.get_route(employee_id, stage_id)
     """
 
     @abstractmethod
     def list_routes(self, employee_id: int, only_active: bool = False) -> list[StageDTO]:
-        """
-        Вернуть список маршрутов, доступных сотруднику.
+        """Маршруты, доступные сотруднику.
 
-        Параметры:
-            employee_id — кто смотрит.
-            only_active — True, если нужны только активные маршруты.
+        Товары (items) не заполняются — для списка они не нужны.
+        Сотруднику нечего смотреть -> пустой список, не ошибка.
         """
-        raise NotImplementedError
 
     @abstractmethod
     def get_route(self, employee_id: int, stage_id: int) -> StageDTO:
+        """Один маршрут вместе с товарами (items).
+
+        Нет маршрута -> NotFoundError. Нет прав -> AccessDeniedError.
         """
-        Вернуть ОДИН маршрут (этап) вместе с товарами.
-        Доступ проверяется по тем же правилам, что и в list_routes.
+
+    @abstractmethod
+    def get_shipment_progress(self, employee_id: int, shipment_id: int) -> ShipmentDTO:
+        """Перевозка целиком: все этапы с товарами.
+
+        Нет перевозки -> NotFoundError. Нет прав -> AccessDeniedError.
         """
-        raise NotImplementedError
