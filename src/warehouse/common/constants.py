@@ -35,3 +35,4 @@ class StatusName(StrEnum):
     WAITING = "В ожидании (In Waiting)"
     DISCREPANCY = "Принято с расхождениями (Discrepancy)"
     IN_TRANSIT_WH = "На транзитном складе (In Transit WH)"
+    CANCELLED = "Отменено (Cancelled)"

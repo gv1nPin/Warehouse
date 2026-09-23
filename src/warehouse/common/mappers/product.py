@@ -1,4 +1,4 @@
-from warehouse.api.dto import ProductDTO
+from warehouse.common.dto import ProductDTO
 from warehouse.dal.entities import Product
 
 
