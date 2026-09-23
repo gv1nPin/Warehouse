@@ -38,9 +38,8 @@ class ShipmentTransitCoordinator(AbstractShipmentTransitCoordinator):
 
         if not moving:
             # Везти нечего: дальше по маршруту не поедет ни один этап.
-            # Закрываем их все вместе с перевозкой, иначе они навсегда
-            # зависнут в «В ожидании». Отдельного статуса «отменён»
-            # в справочнике нет, поэтому ставим «с расхождениями».
+            # Закрываем их все вместе с перевозкой статусом «Отменено»,
+            # иначе они навсегда зависнут в «В ожидании».
             self._close_remaining_stages(uow, stage)
             return
 
@@ -56,14 +55,15 @@ class ShipmentTransitCoordinator(AbstractShipmentTransitCoordinator):
         )
 
     def _close_remaining_stages(self, uow: UnitOfWork, stage: StageDTO) -> None:
-        """Закрывает все этапы после текущего вместе с перевозкой."""
-        discrepancy_id = self._status_id(uow, StatusName.DISCREPANCY)
+        """Закрывает все этапы после текущего вместе с перевозкой: везти
+        дальше нечего, маршрут дальше не едет."""
+        cancelled_id = self._status_id(uow, StatusName.CANCELLED)
 
         for rest in uow.stages.list_by_shipment(stage.shipment_id):
             if rest.stage_order > stage.stage_order:
-                uow.stages.set_status(rest.id, discrepancy_id)
+                uow.stages.set_status(rest.id, cancelled_id)
 
-        uow.shipments.set_status(stage.shipment_id, discrepancy_id)
+        uow.shipments.set_status(stage.shipment_id, cancelled_id)
 
     @staticmethod
     def _fill_next_stage(

@@ -158,7 +158,8 @@ INSERT INTO public."Statuses" (id, status_name) VALUES
     (4, 'Зарезервировано (Reserved)'),
     (5, 'В ожидании (In Waiting)'),
     (6, 'Принято с расхождениями (Discrepancy)'),
-    (7, 'На транзитном складе (In Transit WH)')
+    (7, 'На транзитном складе (In Transit WH)'),
+    (8, 'Отменено (Cancelled)')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public."Permissions" (id, permission_name, description) VALUES
