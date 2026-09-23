@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 
-from warehouse.api.dto import EmployeeDTO
+from warehouse.common.dto import EmployeeDTO
 
 
 @dataclass(frozen=True, slots=True)

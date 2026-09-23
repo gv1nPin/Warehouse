@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from warehouse.api.dto import StageDTO
+from warehouse.common.dto import StageDTO
 
 
 class AbstractShipmentDispatchService(ABC):

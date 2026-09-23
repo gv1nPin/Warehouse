@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 
-from warehouse.api.dto import NewStageItem, StageDTO
+from warehouse.common.dto import NewStageItem, StageDTO
 from warehouse.bll.interfaces.shipment_service.abstract_shipment_transit_coordinator import (
     AbstractShipmentTransitCoordinator,
 )

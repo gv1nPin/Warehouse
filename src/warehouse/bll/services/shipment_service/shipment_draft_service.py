@@ -3,7 +3,7 @@ from collections.abc import Callable, Sequence
 from datetime import date
 from decimal import Decimal, InvalidOperation
 
-from warehouse.api.dto import (
+from warehouse.common.dto import (
     EmployeeDTO,
     NewStage,
     NewStageItem,

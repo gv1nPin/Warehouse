@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from datetime import date
 from decimal import Decimal
 
-from warehouse.api.dto import (
+from warehouse.common.dto import (
     EmployeeDTO,
     NewStageItem,
     ShipmentDTO,

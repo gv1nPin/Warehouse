@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from decimal import Decimal
 
-from warehouse.api.dto import StageDTO, StageItemDTO
+from warehouse.common.dto import StageDTO, StageItemDTO
 
 
 class AbstractShipmentReceiptService(ABC):

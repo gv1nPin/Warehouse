@@ -1,7 +1,7 @@
 import logging
 from collections.abc import Collection
 
-from warehouse.api.dto import StageDTO
+from warehouse.common.dto import StageDTO
 from warehouse.bll.interfaces.auth_service import AbstractAccessService, ActorDTO
 from warehouse.common import PermissionName, StatusName
 from warehouse.common.exceptions import InvalidStatusError, NotFoundError

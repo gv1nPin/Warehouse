@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from warehouse.api.dto import EmployeeDTO
+from warehouse.common.dto import EmployeeDTO
 from warehouse.dal.unit_of_work import UnitOfWork
 
 

@@ -3,7 +3,7 @@ from collections.abc import Callable
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 
-from warehouse.api.dto import StageDTO, StageItemDTO
+from warehouse.common.dto import StageDTO, StageItemDTO
 from warehouse.bll.interfaces.auth_service import AbstractAccessService, ActorDTO
 from warehouse.bll.interfaces.shipment_service.abstract_shipment_receipt_service import (
     AbstractShipmentReceiptService,

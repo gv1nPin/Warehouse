@@ -1,6 +1,6 @@
 from collections.abc import Callable, Collection
 
-from warehouse.api.dto import ShipmentDTO, StageDTO
+from warehouse.common.dto import ShipmentDTO, StageDTO
 from warehouse.bll.interfaces.auth_service import AbstractAccessService, ActorDTO
 from warehouse.bll.interfaces.shipment_service.abstract_route_query_service import (
     AbstractRouteQueryService,

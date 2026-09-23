@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from warehouse.api.dto import ShipmentDTO, StageDTO
+from warehouse.common.dto import ShipmentDTO, StageDTO
 
 
 class AbstractRouteQueryService(ABC):
