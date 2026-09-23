@@ -1,4 +1,4 @@
-from warehouse.api.dto import EmployeeDTO
+from warehouse.common.dto import EmployeeDTO
 from warehouse.dal.entities import Employee
 
 

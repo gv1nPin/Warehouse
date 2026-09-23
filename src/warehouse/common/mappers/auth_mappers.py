@@ -1,5 +1,5 @@
 from typing import Dict, Any
-from warehouse.api.schemas.auth_dto import TokenOutputDTO
+from warehouse.common.schemas.auth_dto import TokenOutputDTO
 
 class AuthMapper:
     @staticmethod

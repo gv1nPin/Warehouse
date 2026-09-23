@@ -1,4 +1,4 @@
-from warehouse.api.dto import StockItemDTO, WarehouseDTO
+from warehouse.common.dto import StockItemDTO, WarehouseDTO
 from warehouse.dal.entities import StockOnWarehouse, Warehouse
 
 
