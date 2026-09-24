@@ -128,13 +128,13 @@ class StockListView(View):
         self, 
         request, 
         *args, 
-        query_service: RouteQueryService = Provide[Container.query_service],
+        draft_service: ShipmentDraftService = Provide[Container.draft_service],
         **kwargs
     ) -> JsonResponse:
         employee_id = request.session.get('employee_id', 1)
         
         # Получаем данные остатков без ручного открытия контекстов uow во views
-        stocks = query_service.get_stock_by_employee_warehouse(employee_id)
+        stocks = draft_service.list_available_stock(employee_id)
         return JsonResponse({"stocks": [asdict(s) for s in stocks]}, encoder=DjangoJSONEncoder, status=200)
 
 @method_decorator(csrf_exempt, name='dispatch')

@@ -26,15 +26,15 @@ class Container(containers.DeclarativeContainer):
 
     # 3. BLL: Базовые сервисы авторизации
     access_service = providers.Factory(AccessService)
-    login_service = providers.Factory(LoginService, uow=uow)
+    login_service = providers.Factory(LoginService, uow=uow, access=access_service)
     
     # 4. BLL: Полный пакет сервисов Shipment (подключаем uow.provider как фабрику)
-    query_service = providers.Factory(RouteQueryService, uow_factory=uow.provider)
+    query_service = providers.Factory(RouteQueryService, uow_factory=uow.provider, access=access_service)
     draft_service = providers.Factory(ShipmentDraftService, uow_factory=uow.provider, access=access_service)
     dispatch_service = providers.Factory(ShipmentDispatchService, uow_factory=uow.provider, access=access_service)
     
     # Сначала регистрируем координатор, так как он нужен сервису приемки грузов
-    transit_coordinator = providers.Factory(ShipmentTransitCoordinator, access=access_service)
+    transit_coordinator = providers.Factory(ShipmentTransitCoordinator)
     
     receive_service = providers.Factory(
         ShipmentReceiptService, 
