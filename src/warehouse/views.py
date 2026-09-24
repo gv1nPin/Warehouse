@@ -1,23 +1,31 @@
 import json
 from dataclasses import asdict
+from django.core.serializers.json import DjangoJSONEncoder
 from django.http import JsonResponse
+from django.utils.decorators import method_decorator
 from django.views import View
+from django.views.decorators.csrf import csrf_exempt
 
+# Подключаем инструменты инжекции от dependency_injector
+from dependency_injector.wiring import Provide, inject
+from container import Container
 from warehouse.bll.services.shipment_service import ShipmentDraftService
-from warehouse.dal.unit_of_work import UnitOfWork
-from warehouse.bll.services.auth_service import AccessService
 
+
+@method_decorator(csrf_exempt, name='dispatch')
 class CreateDraftView(View):
-    """Контроллер Django, использующий напрямую ваши доменные DTO."""
+    """Контроллер Django с автоматическим внедрением зависимостей (DI)."""
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        # Фабрика UnitOfWork для изоляции сессий в потоках Django
-        self.uow_factory = lambda: UnitOfWork()
-        self.access_service = AccessService() 
-        self.service = ShipmentDraftService(self.uow_factory, self.access_service)
-
-    def post(self, request):
+    @inject
+    def post(
+        self, 
+        request, 
+        *args, 
+        # Контейнер автоматически подставит инстанс сервиса в этот аргумент
+        draft_service: ShipmentDraftService = Provide[Container.draft_service],
+        **kwargs
+    ) -> JsonResponse:
+        
         try:
             body = json.loads(request.body)
         except json.JSONDecodeError:
@@ -25,9 +33,8 @@ class CreateDraftView(View):
 
         employee_id = request.session.get('employee_id', 1)
 
-        # 1. Сервис выполняет логику внутри транзакции SQLAlchemy 2.0
-        # 2. Напрямую возвращает строгий доменный ShipmentDTO
-        shipment_dto = self.service.create_draft(
+        # Вызываем внедренный сервис бизнес-логики
+        shipment_dto = draft_service.create_draft(
             employee_id=employee_id,
             planned_date=body.get("planned_date"),
             route=body.get("route", []),
@@ -36,6 +43,5 @@ class CreateDraftView(View):
             documents=body.get("documents", [])
         )
 
-        # Функция asdict() автоматически превратит ShipmentDTO и все вложенные 
-        # StageDTO, Decimal, даты в валидный словарь для Django JsonResponse.
-        return JsonResponse(asdict(shipment_dto), status=201)
+        data = asdict(shipment_dto)
+        return JsonResponse(data, encoder=DjangoJSONEncoder, status=201)
