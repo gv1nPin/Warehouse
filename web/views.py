@@ -5,23 +5,29 @@ from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
+from django.views.generic import TemplateView
 
-# Подключаем инструменты инжекции от dependency_injector
+# Инструменты DI
 from dependency_injector.wiring import Provide, inject
 from container import Container
 from warehouse.bll.services.shipment_service import ShipmentDraftService
 
+# ЖЕЛЕЗНЫЙ ФИКС ИНТЕГРАЦИИ:
+# Создаем инстанс контейнера и проклеиваем текущий модуль views прямо здесь.
+# Это гарантирует атомарную загрузку всех классов для Django без ImportError!
+container = Container()
+container.wire(modules=[__name__])
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class CreateDraftView(View):
-    """Контроллер Django с автоматическим внедрением зависимостей (DI)."""
+    """Контроллер Django для создания черновиков перевозок."""
 
     @inject
     def post(
         self, 
         request, 
         *args, 
-        # Контейнер автоматически подставит инстанс сервиса в этот аргумент
         draft_service: ShipmentDraftService = Provide[Container.draft_service],
         **kwargs
     ) -> JsonResponse:
@@ -33,7 +39,6 @@ class CreateDraftView(View):
 
         employee_id = request.session.get('employee_id', 1)
 
-        # Вызываем внедренный сервис бизнес-логики
         shipment_dto = draft_service.create_draft(
             employee_id=employee_id,
             planned_date=body.get("planned_date"),
@@ -45,3 +50,8 @@ class CreateDraftView(View):
 
         data = asdict(shipment_dto)
         return JsonResponse(data, encoder=DjangoJSONEncoder, status=201)
+
+
+class PrototypeCabinetView(TemplateView):
+    """Контроллер для отображения фронтенд-прототипа личного кабинета."""
+    template_name = "index.html"

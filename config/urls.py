@@ -16,8 +16,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from web.views import CreateDraftView
+from web.views import CreateDraftView, PrototypeCabinetView
 
 urlpatterns = [
+    path('', PrototypeCabinetView.as_view(), name='cabinet_prototype'),
+
     path('api/shipments/draft/', CreateDraftView.as_view(), name='create_draft'),
 ]
