@@ -9,7 +9,7 @@ class SQLAlchemyAndBusinessErrorMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # ФИКС: Используем try-finally, чтобы remove() вызвался ВСЕГДА,
+        # Используем try-finally, чтобы remove() вызвался ВСЕГДА,
         # даже если контроллер упал с системной ошибкой (500)
         try:
             response = self.get_response(request)
@@ -22,7 +22,7 @@ class SQLAlchemyAndBusinessErrorMiddleware:
         # или в других middleware, подчищаем сессию и здесь
         scoped_session_factory.remove()
         
-        # Превращаем ваши доменные исключения (400, 403, 409) в красивые JSON-ответы
+        # Превращаем доменные исключения (400, 403, 409) в красивые JSON-ответы
         if isinstance(exception, BusinessError):
             return JsonResponse(
                 {"error": exception.message},
