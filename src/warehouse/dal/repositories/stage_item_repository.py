@@ -40,16 +40,18 @@ class StageItemRepository(BaseRepository[StageItem]):
     # ---------- Запись ----------
 
     def add(
-        self, stage_id: int, product_id: int, document_quantity: Decimal, comment: str | None = None
+        self, stage_id: int, product_id: int, document_quantity: Decimal, actual_quantity: Decimal | None = None, comment: str | None = None
     ) -> int:
-        """В одном этапе товар может быть только один раз (уникальность в БД)."""
+        # Добавляем поддержку actual_quantity, если позиция пишется транзитом"""
         item = StageItem(
             stage_id=stage_id,
             product_id=product_id,
             document_quantity=document_quantity,
+            actual_quantity=actual_quantity,
             comment=comment,
         )
         return self._add(item).id
+
 
     def add_many(self, stage_id: int, items: Iterable[NewStageItem]) -> None:
         self.session.add_all(

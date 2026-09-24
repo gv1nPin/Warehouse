@@ -16,7 +16,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from warehouse.views import CreateDraftView
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('api/shipments/draft/', CreateDraftView.as_view(), name='create_draft'),
 ]

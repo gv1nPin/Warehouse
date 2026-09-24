@@ -13,7 +13,10 @@ class StageDocumentRepository(BaseRepository[StageDocument]):
     model = StageDocument
 
     def _select(self):
-        return select(StageDocument).options(joinedload(StageDocument.uploader))
+        # uploader (Employee) должен быть загружен через INNER JOIN,
+        # чтобы свойства .first_name и .last_name были доступны в памяти без дозапросов
+        return select(StageDocument).options(joinedload(StageDocument.uploader, innerjoin=True))
+
 
     # ---------- Чтение ----------
 

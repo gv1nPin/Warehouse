@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session, sessionmaker
+from .database import scoped_session_factory
 
-from .database import session_factory as default_session_factory
 from .repositories import (
     EmployeeRepository,
     MeasurementRepository,
@@ -18,6 +18,7 @@ from .repositories import (
 
 
 class UnitOfWork:
+    # Безопасный для Django многопоточный Unit of Work.
     """Одна транзакция и все репозитории на ней.
 
     with uow:
@@ -42,8 +43,9 @@ class UnitOfWork:
     stage_documents: StageDocumentRepository
     history: HistoryRepository
 
-    def __init__(self, session_factory: sessionmaker[Session] = default_session_factory):
+    def __init__(self, session_factory=scoped_session_factory):
         self._session_factory = session_factory
+        self.session = None
 
     def __enter__(self) -> "UnitOfWork":
         self.session = self._session_factory()
@@ -68,7 +70,9 @@ class UnitOfWork:
             else:
                 self.session.rollback()
         finally:
-            self.session.close()
+            # Важно: scoped_session.remove() полностью закрывает сессию 
+            # и возвращает соединение в пул SQLAlchemy, исключая утечки!
+            self._session_factory.remove()
 
     def commit(self) -> None:
         self.session.commit()

@@ -1,77 +1,22 @@
-"""Проверка, что проект собирается: контейнер отдаёт UoW, модели сходятся, БД отвечает.
-
-Запуск из папки src:  python main.py
-"""
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-from dependency_injector.wiring import Provide, inject
 from sqlalchemy import text
 from sqlalchemy.orm import configure_mappers
+from dependency_injector.wiring import Provide, inject
 
 from container import Container
 from warehouse.common import RoleName
 from warehouse.dal.unit_of_work import UnitOfWork
 from warehouse.common.logger import setup_logging
-
 from warehouse.common.exceptions import BusinessError  
 
-
-def setup_exception_handlers(app: FastAPI) -> None:
-    """Подключает глобальные перехватчики исключений к приложению FastAPI."""
-
-    # 1. Перехват всех кастомных бизнес-ошибок (400, 401, 403, 404, 409)
-    @app.exception_handler(BusinessError)
-    async def business_error_handler(request: Request, exc: BusinessError):
-        status_code = getattr(exc, "status_code", 500)
-        
-        # Логируем как WARNING (это ожидаемая ошибка логики, а не падение сервера)
-        logging.warning(
-            f"Бизнес-ошибка [{exc.__class__.__name__}] при запросе {request.url.path} -> {exc.message}"
-        )
-        
-        return JSONResponse(
-            status_code=status_code,
-            content={
-                "error": exc.__class__.__name__,  # Вернет "NotFoundError", "AuthError" и т.д.
-                "detail": exc.message            # Понятный текст ошибки
-            }
-        )
-
-    # 2. Перехват критических непредвиденных падений (Unhandled Exception -> 500)
-    @app.exception_handler(Exception)
-    async def critical_error_handler(request: Request, exc: Exception):
-        # Пишем в логгер с уровнем ERROR и полным Трейсбэком (Stack Trace) для отладки
-        logging.exception(f"Критический сбой (500) на эндпоинте {request.url.path}: {exc}")
-        
-        return JSONResponse(
-            status_code=500,
-            content={
-                "error": "InternalServerError",
-                "detail": "Внутренняя ошибка сервера. Инцидент зафиксирован в техлоггере."
-            }
-        )
-
-@asynccontextmanager
-async def lifespan(fastapi_app: FastAPI):
-    # Данный блок выполняется СТРОГО ОДИН РАЗ при старте веб-сервера uvicorn
-    setup_logging()
-    logging.info("Веб-сервер FastAPI успешно запущен и готов принимать запросы.")
-    yield
-    # Данный блок выполнится при штатной остановке сервера (если нужно закрыть коннекты)
-    logging.info("Веб-сервер FastAPI завершает свою работу.")
-
-
-# Инициализация FastAPI и подключение обработчиков
-app = FastAPI(lifespan=lifespan)
-setup_exception_handlers(app)
+# Избавляемся от лишнего кода FastAPI, если Django выступает фронтендом.
+# Оставляем только CLI-скрипт проверки работоспособности (Smoke Test)
 
 def check(name: str, func) -> bool:
     try:
         result = func()
     except Exception as e:  # noqa: BLE001
-        # Теперь выводим ошибки проверки через настроенный техлоггер
         logging.error(f"  [FAIL] {name}: {type(e).__name__}: {e}")
         return False
     logging.info(f"  [ OK ] {name}: {result}")
@@ -81,6 +26,8 @@ def check(name: str, func) -> bool:
 @inject
 def main(uow: UnitOfWork = Provide[Container.uow]) -> None:
     logging.info(f"UoW из контейнера: {type(uow).__name__}")
+    
+    # Сборка мапперов SQLAlchemy 2.0
     results = [check("Связи между моделями", lambda: configure_mappers() or "без ошибок")]
 
     with uow:
@@ -107,9 +54,12 @@ def main(uow: UnitOfWork = Provide[Container.uow]) -> None:
 
 
 if __name__ == "__main__":
-    # Инициализируем логи СРАЗУ, чтобы при `python main.py` вывод шел через RotatingFileHandler
+    # Инициализируем логи строго ОДИН раз
     setup_logging()
     
     container = Container()
-    container.wire(modules=[__name__])
+    # ФИКС ИНЖЕКЦИИ: Явно указываем имя модуля "__main__", чтобы wiring_config сработал в CLI
+    container.wire(modules=["__main__"])
+    
+    logging.info("Запуск скрипта верификации слоев системы...")
     main()

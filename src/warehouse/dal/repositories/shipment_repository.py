@@ -52,6 +52,7 @@ class ShipmentRepository(BaseRepository[Shipment]):
         """Создаёт отгрузку вместе с этапами и их товарами."""
         shipment = Shipment(creator_id=creator_id, planned_date=planned_date, status_id=status_id)
         rest_status_id = stage_status_id or status_id
+        
         for order, stage in enumerate(stages, start=1):
             shipment.stages.append(
                 ShipmentStage(
@@ -66,7 +67,10 @@ class ShipmentRepository(BaseRepository[Shipment]):
                     ],
                 )
             )
-        return self._add(shipment).id
+        self.session.add(shipment)
+        self.session.flush() # БД присвоит ID, и порядок stage_order зафиксируется
+        return shipment.id
+
 
     def set_status(self, shipment_id: int, status_id: int) -> bool:
         return self._update(shipment_id, status_id=status_id)

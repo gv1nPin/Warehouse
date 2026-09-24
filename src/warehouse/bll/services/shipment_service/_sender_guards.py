@@ -37,17 +37,21 @@ class SenderGuardsMixin:
         if stage is None:
             raise NotFoundError(f"Этап №{stage_id} не найден")
 
-        if actor.employee.warehouse_id != stage.from_warehouse.id:
-            logging.warning(
-                "Отказ в отправке: сотрудник №%s (склад №%s) обратился к этапу №%s "
-                "со склада №%s",
-                actor.employee.id,
-                actor.employee.warehouse_id,
-                stage.id,
-                stage.from_warehouse.id,
-            )
+        # ФИКС: Проверяем склад и логируем варнинг ТОЛЬКО если пользователь не админ
+        if not self._access.is_admin(actor):
+            if actor.employee.warehouse_id != stage.from_warehouse.id:
+                logging.warning(
+                    "Попытка несанкционированного доступа: сотрудник №%s (склад №%s) "
+                    "обратился к этапу №%s со склада №%s",
+                    actor.employee.id,
+                    actor.employee.warehouse_id,
+                    stage.id,
+                    stage.from_warehouse.id,
+                )
+                
         self._access.require_warehouse(actor, stage.from_warehouse.id)
         return stage
+
 
     def _editable_stage(self, uow: UnitOfWork, actor: ActorDTO, stage_id: int) -> StageDTO:
         """Первый этап в статусе «Черновик» — только его товары правят руками."""
