@@ -68,7 +68,7 @@ class ShipmentRepository(BaseRepository[Shipment]):
                 )
             )
         self.session.add(shipment)
-        self.session.flush() # ГАРАНТИЯ: БД присвоит ID, и порядок stage_order зафиксируется
+        self.session.flush() # БД присвоит ID, и порядок stage_order зафиксируется
         return shipment.id
 
 
