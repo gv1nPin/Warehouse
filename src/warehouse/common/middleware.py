@@ -9,20 +9,24 @@ class SQLAlchemyAndBusinessErrorMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        response = self.get_response(request)
-        
-        # После отправки ответа клиенту обязательно зачищаем сессию потока
-        scoped_session_factory.remove()
-        return response
+        # ФИКС: Используем try-finally, чтобы remove() вызвался ВСЕГДА,
+        # даже если контроллер упал с системной ошибкой (500)
+        try:
+            response = self.get_response(request)
+            return response
+        finally:
+            scoped_session_factory.remove()
 
     def process_exception(self, request, exception):
-        # Гарантируем закрытие сессии при падении
+        # ФИКС ПОВТОРНОЙ ОЧИСТКИ: На случай, если исключение вылетело до get_response 
+        # или в других middleware, подчищаем сессию и здесь
         scoped_session_factory.remove()
         
-        # Фикс: превращаем ваши доменные исключения (400, 403, 409) в красивые JSON-ответы
+        # Превращаем ваши доменные исключения (400, 403, 409) в красивые JSON-ответы
         if isinstance(exception, BusinessError):
             return JsonResponse(
                 {"error": exception.message},
                 status=exception.status_code
             )
+        # Системные ошибки (500) пробрасываем дальше в Django
         return None
