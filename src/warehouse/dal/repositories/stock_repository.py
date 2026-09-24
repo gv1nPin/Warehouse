@@ -44,10 +44,15 @@ class StockRepository(BaseRepository[StockOnWarehouse]):
         self, warehouse_id: int, product_ids: Iterable[int], for_update: bool = False
     ) -> dict[int, StockItemDTO]:
         """{product_id: остаток}. Товаров, которых на складе нет, в ответе не будет."""
+        # Очищаем дубликаты и ЖЕСТКО СОРТИРУЕМ ID по возрастанию.
+        # Это гарантирует одинаковый порядок блокировок (FOR UPDATE) во всех потоках Django.
+        unique_sorted_ids = sorted(list(set(product_ids)))
+
         stmt = self._select(warehouse_id, for_update).where(
-            StockOnWarehouse.product_id.in_(list(product_ids))
+            StockOnWarehouse.product_id.in_(unique_sorted_ids)
         )
         return {s.product_id: to_stock_item(s) for s in self._all(stmt)}
+
 
     def list_by_warehouse(self, warehouse_id: int) -> list[StockItemDTO]:
         stmt = self._select(warehouse_id).order_by(Product.product_name)
