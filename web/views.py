@@ -1,4 +1,5 @@
 import json
+import logging
 from dataclasses import asdict
 from django.core.serializers.json import DjangoJSONEncoder
 from django.http import JsonResponse
@@ -48,6 +49,11 @@ class CreateDraftView(View):
             driver_id=body.get("driver_id"),
             documents=body.get("documents", [])
         )
+        logging.info(
+            "Веб-слой: сотруднику №%s отдан черновик перевозки №%s",
+            employee_id,
+            shipment_dto.id,
+        )
         return JsonResponse(asdict(shipment_dto), encoder=DjangoJSONEncoder, status=201)
 
 
@@ -68,6 +74,11 @@ class ShipStageView(View):
         
         # Вызываем доменный сервис отгрузки (внутри сработает резерв остатков)
         stage_dto = dispatch_service.ship_stage(employee_id=employee_id, stage_id=stage_id)
+        logging.info(
+            "Веб-слой: сотруднику №%s отдан отправленный этап №%s",
+            employee_id,
+            stage_dto.id,
+        )
         return JsonResponse(asdict(stage_dto), encoder=DjangoJSONEncoder, status=200)
 
 
@@ -89,6 +100,12 @@ class AcceptStageView(View):
         # Сервис приёмки зафиксирует фактические объёмы и автоматически 
         # вызовет ShipmentTransitCoordinator для движения груза на следующий этап
         stage_dto = receive_service.accept_stage(employee_id=employee_id, stage_id=stage_id)
+        logging.info(
+            "Веб-слой: сотруднику №%s отдан принятый этап №%s (статус «%s»)",
+            employee_id,
+            stage_dto.id,
+            stage_dto.status_name,
+        )
         return JsonResponse(asdict(stage_dto), encoder=DjangoJSONEncoder, status=200)
 
 
@@ -116,7 +133,13 @@ class LoginView(View):
         
         request.session['employee_id'] = auth_dto.employee.id
         request.session['role_name'] = auth_dto.employee.role_name
-        
+
+        # Токен и пароль в лог не пишем: это чувствительные данные.
+        logging.info(
+            "Веб-слой: сотрудник №%s (%s) вошёл в систему",
+            auth_dto.employee.id,
+            auth_dto.employee.role_name,
+        )
         return JsonResponse(asdict(auth_dto.employee), status=200)
 
 
@@ -135,6 +158,11 @@ class StockListView(View):
         
         # Получаем данные остатков без ручного открытия контекстов uow во views
         stocks = draft_service.list_available_stock(employee_id)
+        logging.info(
+            "Веб-слой: сотруднику №%s отдано позиций остатка: %s",
+            employee_id,
+            len(stocks),
+        )
         return JsonResponse({"stocks": [asdict(s) for s in stocks]}, encoder=DjangoJSONEncoder, status=200)
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -156,6 +184,11 @@ class CancelShipmentView(View):
         shipment_dto = dispatch_service.cancel_shipment(
             employee_id=employee_id, 
             shipment_id=shipment_id
+        )
+        logging.info(
+            "Веб-слой: сотруднику №%s отдана отменённая перевозка №%s",
+            employee_id,
+            shipment_dto.id,
         )
         return JsonResponse(asdict(shipment_dto), encoder=DjangoJSONEncoder, status=200)
 
