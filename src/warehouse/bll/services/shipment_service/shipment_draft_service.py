@@ -145,10 +145,10 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
                 stage_status_id=self._status_id(uow, StatusName.WAITING),
                 first_stage_status_id=draft_id,
             )
-            shipment = self._shipment(uow, shipment_id)
-            first = shipment.stages[0]
-            for document in documents:
-                uow.stage_documents.add(first.id, actor.employee.id, document)
+            # вместо обращения по shipment.stages[0] извлекаем строго по бизнес-логике
+            first_stage = uow.stages.get_by_order(shipment_id, stage_order=1)
+            if first_stage is None:
+                raise NotFoundError(f"Стартовый этап перевозки №{shipment_id} не инициализирован")
 
             logging.info(
                 "Сотрудник №%s создал черновик перевозки №%s по маршруту %s, документов: %s",
@@ -157,7 +157,7 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
                 route,
                 len(documents),
             )
-            return shipment
+            return self._shipment(uow, shipment_id)
 
     def add_item(
         self, employee_id: int, stage_id: int, product_id: int, quantity: Decimal
