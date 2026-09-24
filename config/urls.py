@@ -22,7 +22,8 @@ from web.views import (
     LoginView, 
     StockListView,
     ShipStageView,
-    AcceptStageView
+    AcceptStageView,
+    CancelShipmentView
 )
 
 urlpatterns = [
@@ -39,4 +40,6 @@ urlpatterns = [
     path('api/shipments/draft/', CreateDraftView.as_view(), name='create_draft'),
     path('api/stages/<int:stage_id>/ship/', ShipStageView.as_view(), name='ship_stage'),
     path('api/stages/<int:stage_id>/accept/', AcceptStageView.as_view(), name='accept_stage'),
+    path('api/shipments/<int:shipment_id>/cancel/', CancelShipmentView.as_view(), name='cancel_shipment'),
+
 ]

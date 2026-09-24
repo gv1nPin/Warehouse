@@ -137,6 +137,27 @@ class StockListView(View):
         stocks = query_service.get_stock_by_employee_warehouse(employee_id)
         return JsonResponse({"stocks": [asdict(s) for s in stocks]}, encoder=DjangoJSONEncoder, status=200)
 
+@method_decorator(csrf_exempt, name='dispatch')
+class CancelShipmentView(View):
+    """РАЗДЕЛ: Отмена перевозки до момента её отправки."""
+    
+    @inject
+    def post(
+        self, 
+        request, 
+        shipment_id: int, # ID забираем прямо из URL-маршрута
+        *args, 
+        dispatch_service: ShipmentDispatchService = Provide[Container.dispatch_service],
+        **kwargs
+    ) -> JsonResponse:
+        employee_id = request.session.get('employee_id', 1)
+        
+        # Вызываем доменный метод отмены, он вернет обновленный ShipmentDTO
+        shipment_dto = dispatch_service.cancel_shipment(
+            employee_id=employee_id, 
+            shipment_id=shipment_id
+        )
+        return JsonResponse(asdict(shipment_dto), encoder=DjangoJSONEncoder, status=200)
 
 class PrototypeCabinetView(TemplateView):
     """6. РЕНДЕРИНГ: Отдача фронтенд-прототипа."""
