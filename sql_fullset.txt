@@ -170,14 +170,12 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public."Roles" (id, role_name) VALUES
     (1, 'Старший кладовщик'),
-    (2, 'Оператор приемки'),
     (3, 'Администратор системы')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public."RolePermissions" (role_id, permission_id) VALUES
     (1, 1),  -- Старший кладовщик -> shipment:create
     (1, 2),  -- Старший кладовщик -> shipment:accept
-    (2, 2),  -- Оператор приемки  -> shipment:accept
     (3, 3)   -- Администратор     -> employee:manage
 ON CONFLICT (role_id, permission_id) DO NOTHING;
 

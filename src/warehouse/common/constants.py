@@ -13,7 +13,6 @@ class RoleName(StrEnum):
     """Roles.role_name"""
 
     SENIOR_STOREKEEPER = "Старший кладовщик"   # создаёт отправки и принимает
-    RECEIVING_OPERATOR = "Оператор приемки"    # только принимает
     ADMIN = "Администратор системы"            # управляет сотрудниками
 
 
