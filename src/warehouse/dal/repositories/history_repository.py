@@ -2,7 +2,10 @@ from typing import Dict, Any
 from warehouse.dal.repositories.base_repository import BaseRepository
 from warehouse.dal.entities.operation_history import OperationHistory
 
-class HistoryRepository(BaseRepository):
+# ФИКС: Явно указываем сущность в Generic-аргументе и инициализируем атрибут model
+class HistoryRepository(BaseRepository[OperationHistory]):
+    model = OperationHistory
+
     def log_operation(self, data: Dict[str, Any]) -> None:
         """Принимает данные аудита от маппера BLL и добавляет в сессию базы данных."""
         db_audit = OperationHistory(
