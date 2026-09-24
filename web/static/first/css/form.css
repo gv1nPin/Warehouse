@@ -1,0 +1,30 @@
+/* Форма нового товара */
+
+.product-form {
+    max-width: 360px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.product-form p {
+    margin: 0;
+}
+
+.product-form label {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.product-form input {
+    width: 100%;
+    padding: 6px 8px;
+    box-sizing: border-box;
+}
+
+/* подписи ошибок валидации */
+.product-form .errorlist {
+    color: #b00020;
+    margin: 4px 0 0;
+    padding-left: 18px;
+}

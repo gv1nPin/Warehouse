@@ -9,7 +9,7 @@ from warehouse.bll.services.auth_service import AccessService
 
 class Container(containers.DeclarativeContainer):
     # ГАРАНТИЯ ИНЖЕКЦИИ: Указываем Django-модуль с вашими контроллерами
-    wiring_config = containers.WiringConfiguration(modules=["warehouse.views"])
+    wiring_config = containers.WiringConfiguration(modules=["web.views"])
 
     # 1. Инфраструктура
     session_factory = providers.Object(scoped_session_factory)

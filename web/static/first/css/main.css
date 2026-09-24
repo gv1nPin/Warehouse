@@ -1,0 +1,16 @@
+/* Общие стили проекта */
+
+body {
+    font-family: sans-serif;
+    margin: 20px;
+}
+
+nav a {
+    margin-right: 15px;
+}
+
+.card-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}

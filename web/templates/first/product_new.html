@@ -1,0 +1,18 @@
+{% extends 'first/base.html' %}
+{% load static %}
+
+{% block title %}Новый товар{% endblock %}
+
+{% block css %}
+    <link rel="stylesheet" href="{% static 'first/css/form.css' %}">
+{% endblock %}
+
+{% block content %}
+    <h1>Новый товар</h1>
+    <form method="post" class="product-form">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Добавить</button>
+    </form>
+    <p><a href="{% url 'first:products' %}">← к списку товаров</a></p>
+{% endblock %}
