@@ -26,6 +26,9 @@ class AccessService(AbstractAccessService):
             raise AccessDeniedError("Недостаточно прав для этого действия")
 
     def require_warehouse(self, actor: ActorDTO, warehouse_id: int) -> None:
+        # Администратор — суперпользователь: работает с любым складом.
+        if self.is_admin(actor):
+            return
         if actor.employee.warehouse_id != warehouse_id:
             raise AccessDeniedError("Доступ запрещён. Вы работаете на другом складе")
 

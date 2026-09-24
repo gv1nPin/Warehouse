@@ -1,6 +1,20 @@
-from warehouse.common.dto import ShipmentDTO, StageDTO, StageItemDTO
-from warehouse.dal.entities import Shipment, ShipmentStage, StageItem
+from warehouse.common.dto import ShipmentDTO, StageDocumentDTO, StageDTO, StageItemDTO
+from warehouse.dal.entities import Shipment, ShipmentStage, StageDocument, StageItem
 from .warehouse import to_warehouse
+
+
+def to_stage_document(d: StageDocument) -> StageDocumentDTO:
+    return StageDocumentDTO(
+        id=d.id,
+        stage_id=d.stage_id,
+        file_name=d.file_name,
+        storage_path=d.storage_path,
+        content_type=d.content_type,
+        size_bytes=d.size_bytes,
+        uploaded_by=d.uploaded_by,
+        uploaded_by_name=d.uploader.full_name,
+        uploaded_at=d.uploaded_at,
+    )
 
 
 def to_stage_item(i: StageItem) -> StageItemDTO:

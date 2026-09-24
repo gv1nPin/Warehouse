@@ -1,6 +1,6 @@
 from collections.abc import Callable, Collection
 
-from warehouse.common.dto import ShipmentDTO, StageDTO
+from warehouse.common.dto import ShipmentDTO, StageDocumentDTO, StageDTO
 from warehouse.bll.interfaces.auth_service import AbstractAccessService, ActorDTO
 from warehouse.bll.interfaces.shipment_service.abstract_route_query_service import (
     AbstractRouteQueryService,
@@ -19,16 +19,20 @@ ACTIVE_STATUSES = (
 
 # Кто видит все маршруты своего склада, а не только свои рейсы.
 WAREHOUSE_PERMISSIONS = frozenset(
-    {PermissionName.SHIPMENT_CREATE, PermissionName.SHIPMENT_ACCEPT}
+    {
+        PermissionName.SHIPMENT_CREATE,
+        PermissionName.SHIPMENT_DISPATCH,
+        PermissionName.SHIPMENT_ACCEPT,
+    }
 )
 
 
 class RouteQueryService(AbstractRouteQueryService):
     """Просмотр маршрутов. Права проверяем от самых широких к самым узким:
 
-    employee:manage                   — все маршруты;
-    shipment:create / shipment:accept — маршруты своего склада;
-    остальные                         — только рейсы, где сотрудник водитель или приёмщик.
+    shipment:view_all / employee:manage              — все маршруты;
+    shipment:create / :dispatch / :accept            — маршруты своего склада;
+    остальные                                        — только рейсы, где сотрудник водитель или приёмщик.
     """
 
     def __init__(
@@ -42,7 +46,7 @@ class RouteQueryService(AbstractRouteQueryService):
             actor = self._access.get_actor(uow, employee_id)
             status_ids = self._status_ids(uow, ACTIVE_STATUSES) if only_active else None
 
-            if self._access.is_admin(actor):
+            if self._sees_everything(actor):
                 return uow.stages.list_all(status_ids=status_ids)
 
             if self._sees_whole_warehouse(actor):
@@ -85,8 +89,21 @@ class RouteQueryService(AbstractRouteQueryService):
 
             return shipment
 
+    def list_documents(self, employee_id: int, stage_id: int) -> list[StageDocumentDTO]:
+        with self._uow_factory() as uow:
+            actor = self._access.get_actor(uow, employee_id)
+
+            stage = uow.stages.get_by_id(stage_id)
+            if stage is None:
+                raise NotFoundError(f"Маршрут №{stage_id} не найден")
+
+            if not self._can_view_stage(actor, stage):
+                raise AccessDeniedError("Нет прав на просмотр документов этого маршрута")
+
+            return uow.stage_documents.list_by_stage(stage_id)
+
     def _can_view_stage(self, actor: ActorDTO, stage: StageDTO) -> bool:
-        if self._access.is_admin(actor):
+        if self._sees_everything(actor):
             return True
 
         if self._sees_whole_warehouse(actor) and actor.employee.warehouse_id in (
@@ -96,6 +113,12 @@ class RouteQueryService(AbstractRouteQueryService):
             return True
 
         return actor.employee.id in (stage.driver_id, stage.acceptor_id)
+
+    def _sees_everything(self, actor: ActorDTO) -> bool:
+        return (
+            PermissionName.SHIPMENT_VIEW_ALL in actor.permissions
+            or self._access.is_admin(actor)
+        )
 
     @staticmethod
     def _sees_whole_warehouse(actor: ActorDTO) -> bool:

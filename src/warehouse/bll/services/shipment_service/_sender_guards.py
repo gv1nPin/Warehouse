@@ -11,20 +11,22 @@ from warehouse.dal.unit_of_work import UnitOfWork
 class SenderGuardsMixin:
     """Общие проверки «кто -> куда -> что» для сервисов склада-отправителя.
 
-    ShipmentDraftService и ShipmentDispatchService работают с одним и тем же
-    актёром (право SHIPMENT_CREATE) и одним и тем же складом отправления
-    (from_warehouse), поэтому проверки для них общие и вынесены сюда, а не
-    продублированы в двух файлах.
+    ShipmentDraftService и ShipmentDispatchService работают со складом
+    отправления (from_warehouse), поэтому проверки для них общие и вынесены
+    сюда, а не продублированы в двух файлах. Право у них разное:
+    черновик — SHIPMENT_CREATE, резерв и отправка — SHIPMENT_DISPATCH.
 
-    Класс-потребитель обязан завести self._access: AbstractAccessService.
+    Класс-потребитель обязан завести self._access: AbstractAccessService
+    и указать _permission — право, без которого в сервис не пускаем.
     """
 
     _access: AbstractAccessService
+    _permission: PermissionName
 
     def _sender(self, uow: UnitOfWork, employee_id: int) -> ActorDTO:
-        """Сотрудник с правом отправки. Нет права -> AccessDeniedError."""
+        """Сотрудник с правом этого сервиса. Нет права -> AccessDeniedError."""
         actor = self._access.get_actor(uow, employee_id)
-        self._access.require_permission(actor, PermissionName.SHIPMENT_CREATE)
+        self._access.require_permission(actor, self._permission)
         return actor
 
     def _stage_from_my_warehouse(

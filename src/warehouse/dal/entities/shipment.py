@@ -2,7 +2,16 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Identity, Numeric, Text, UniqueConstraint, func
+from sqlalchemy import (
+    BigInteger,
+    DateTime,
+    ForeignKey,
+    Identity,
+    Numeric,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
@@ -78,3 +87,28 @@ class StageItem(Base):
 
     stage: Mapped["ShipmentStage"] = relationship(back_populates="items")
     product: Mapped["Product"] = relationship()
+
+
+class StageDocument(Base):
+    """Документ этапа. Файл хранит web-слой, здесь только его данные.
+
+    Удаляется вместе с этапом (ON DELETE CASCADE), но файл на диске
+    при этом остаётся: убирать его — забота web-слоя.
+    """
+
+    __tablename__ = "StageDocuments"
+
+    id: Mapped[int] = mapped_column(Identity(), primary_key=True)
+    stage_id: Mapped[int] = mapped_column(
+        ForeignKey("ShipmentStages.id", ondelete="CASCADE"), index=True
+    )
+    file_name: Mapped[str] = mapped_column(Text)
+    storage_path: Mapped[str] = mapped_column(Text)
+    content_type: Mapped[str | None] = mapped_column(Text)
+    size_bytes: Mapped[int | None] = mapped_column(BigInteger)
+    uploaded_by: Mapped[int] = mapped_column(ForeignKey("Employees.id"), index=True)
+    uploaded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    uploader: Mapped["Employee"] = relationship()

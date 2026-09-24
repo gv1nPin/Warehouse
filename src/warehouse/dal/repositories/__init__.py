@@ -8,6 +8,7 @@ from .product_repository import ProductRepository
 from .role_repository import RoleRepository
 from .shipment_repository import ShipmentRepository
 from .shipment_stage_repository import ShipmentStageRepository
+from .stage_document_repository import StageDocumentRepository
 from .stage_item_repository import StageItemRepository
 from .status_repository import StatusRepository
 from .stock_repository import StockRepository
@@ -22,6 +23,7 @@ __all__ = [
     "RoleRepository",
     "ShipmentRepository",
     "ShipmentStageRepository",
+    "StageDocumentRepository",
     "StageItemRepository",
     "StatusRepository",
     "StockRepository",

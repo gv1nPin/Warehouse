@@ -29,7 +29,7 @@ class AbstractAccessService(ABC):
 
     @abstractmethod
     def require_warehouse(self, actor: ActorDTO, warehouse_id: int) -> None:
-        """Склад сотрудника не совпадает -> AccessDeniedError."""
+        """Склад сотрудника не совпадает -> AccessDeniedError. Администратора не ограничивает."""
 
     @abstractmethod
     def is_admin(self, actor: ActorDTO) -> bool:

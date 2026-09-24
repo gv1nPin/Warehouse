@@ -8,6 +8,7 @@ from .repositories import (
     RoleRepository,
     ShipmentRepository,
     ShipmentStageRepository,
+    StageDocumentRepository,
     StageItemRepository,
     StatusRepository,
     StockRepository,
@@ -38,6 +39,7 @@ class UnitOfWork:
     shipments: ShipmentRepository
     stages: ShipmentStageRepository
     stage_items: StageItemRepository
+    stage_documents: StageDocumentRepository
     history: HistoryRepository
 
     def __init__(self, session_factory: sessionmaker[Session] = default_session_factory):
@@ -55,6 +57,7 @@ class UnitOfWork:
         self.shipments = ShipmentRepository(self.session)
         self.stages = ShipmentStageRepository(self.session)
         self.stage_items = StageItemRepository(self.session)
+        self.stage_documents = StageDocumentRepository(self.session)
         self.history = HistoryRepository(self.session)
         return self
 

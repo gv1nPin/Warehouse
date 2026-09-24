@@ -6,8 +6,10 @@ from decimal import Decimal, InvalidOperation
 from warehouse.common.dto import (
     EmployeeDTO,
     NewStage,
+    NewStageDocument,
     NewStageItem,
     ShipmentDTO,
+    StageDocumentDTO,
     StageDTO,
     StockItemDTO,
     WarehouseDTO,
@@ -16,7 +18,7 @@ from warehouse.bll.interfaces.auth_service import AbstractAccessService
 from warehouse.bll.interfaces.shipment_service.abstract_shipment_draft_service import (
     AbstractShipmentDraftService,
 )
-from warehouse.common import StatusName
+from warehouse.common import PermissionName, RoleName, StatusName
 from warehouse.common.exceptions import (
     InvalidStatusError,
     NotFoundError,
@@ -39,17 +41,19 @@ NOT_SHIPPED_STATUSES = (StatusName.DRAFT, StatusName.WAITING, StatusName.RESERVE
 
 
 class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
-    """Черновик перевозки со склада сотрудника: маршрут, товары, водитель.
+    """Черновик перевозки со склада сотрудника: маршрут, товары, водитель, документы.
 
-    Товары вручную заводятся только в первый этап. Этапы 2..N заполняет
-    ShipmentTransitCoordinator после приёмки предыдущего: дальше едет факт.
+    Товары и документы вручную заводятся только в первый этап. Этапы 2..N
+    заполняет ShipmentTransitCoordinator после приёмки предыдущего: дальше едет факт.
 
     Готовый этап дальше ведёт ShipmentDispatchService (резерв и отправка) —
-    этот сервис его не трогает.
+    этот сервис его не трогает. Без документа резерв не пройдёт.
 
     Проверяем в порядке «кто → куда → что», как и в приёмке.
     Транзакцию открывает сам, поэтому вызывается прямо из web.
     """
+
+    _permission = PermissionName.SHIPMENT_CREATE
 
     def __init__(
         self, uow_factory: Callable[[], UnitOfWork], access: AbstractAccessService
@@ -72,7 +76,7 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
     def list_drivers(self, employee_id: int) -> list[EmployeeDTO]:
         with self._uow_factory() as uow:
             actor = self._sender(uow, employee_id)
-            return uow.employees.list_by_warehouse(actor.employee.warehouse_id)
+            return uow.employees.list_by_role(RoleName.DRIVER, actor.employee.warehouse_id)
 
     def list_outgoing(self, employee_id: int, only_active: bool = True) -> list[StageDTO]:
         with self._uow_factory() as uow:
@@ -90,12 +94,15 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
         planned_date: date,
         route: Sequence[int],
         items: Sequence[NewStageItem] = (),
+        driver_id: int | None = None,
+        documents: Sequence[NewStageDocument] = (),
     ) -> ShipmentDTO:
         route = list(route)
         items = [
             NewStageItem(product_id=i.product_id, quantity=self._to_quantity(i.quantity))
             for i in items
         ]
+        documents = [self._check_document(d) for d in documents]
 
         with self._uow_factory() as uow:
             actor = self._sender(uow, employee_id)
@@ -116,13 +123,16 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
                 raise ValidationError("Один товар добавлен в этап дважды")
             for item in items:
                 self._require_available(uow, route[0], item.product_id, item.quantity)
+            if driver_id is not None:
+                self._require_driver(uow, driver_id, route[0])
 
-            # Товары заводим только в первый этап, остальные заполнит транзит.
+            # Товары и водителя заводим только в первый этап, остальные заполнит транзит.
             stages = [
                 NewStage(
                     from_warehouse_id=from_id,
                     to_warehouse_id=to_id,
                     items=tuple(items) if order == 0 else (),
+                    driver_id=driver_id if order == 0 else None,
                 )
                 for order, (from_id, to_id) in enumerate(zip(route, route[1:]))
             ]
@@ -138,12 +148,15 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
             # Репозиторий ставит всем этапам один статус, а первый — черновик.
             first = uow.stages.get_by_order(shipment_id, 1)
             uow.stages.set_status(first.id, draft_id)
+            for document in documents:
+                uow.stage_documents.add(first.id, actor.employee.id, document)
 
             logging.info(
-                "Сотрудник №%s создал черновик перевозки №%s по маршруту %s",
+                "Сотрудник №%s создал черновик перевозки №%s по маршруту %s, документов: %s",
                 actor.employee.id,
                 shipment_id,
                 route,
+                len(documents),
             )
             return self._shipment(uow, shipment_id)
 
@@ -188,11 +201,7 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
                 )
 
             if driver_id is not None:
-                driver = uow.employees.get_by_id(driver_id)
-                if driver is None:
-                    raise NotFoundError(f"Сотрудник №{driver_id} не найден или заблокирован")
-                if driver.warehouse_id != stage.from_warehouse.id:
-                    raise ValidationError("Водитель должен работать на складе отправления")
+                self._require_driver(uow, driver_id, stage.from_warehouse.id)
 
             uow.stages.assign_driver(stage_id, driver_id)
 
@@ -215,6 +224,37 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
                 "Сотрудник №%s удалил черновик перевозки №%s", actor.employee.id, shipment_id
             )
 
+    # ---------- Документы ----------
+
+    def attach_document(
+        self, employee_id: int, stage_id: int, document: NewStageDocument
+    ) -> StageDocumentDTO:
+        document = self._check_document(document)
+
+        with self._uow_factory() as uow:
+            actor = self._sender(uow, employee_id)
+            self._editable_stage(uow, actor, stage_id)
+
+            document_id = uow.stage_documents.add(stage_id, actor.employee.id, document)
+            logging.info(
+                "Сотрудник №%s прикрепил документ «%s» к этапу №%s",
+                actor.employee.id,
+                document.file_name,
+                stage_id,
+            )
+            return uow.stage_documents.get_by_id(document_id)
+
+    def remove_document(self, employee_id: int, document_id: int) -> None:
+        with self._uow_factory() as uow:
+            actor = self._sender(uow, employee_id)
+
+            document = uow.stage_documents.get_by_id(document_id)
+            if document is None:
+                raise NotFoundError(f"Документ №{document_id} не найден")
+
+            self._editable_stage(uow, actor, document.stage_id)
+            uow.stage_documents.delete(document_id)
+
     # ---------- Утилиты ----------
 
     @staticmethod
@@ -235,6 +275,37 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
             raise ValidationError(
                 f"На складе свободно {available}, а в этап добавляется {quantity}"
             )
+
+    @staticmethod
+    def _require_driver(uow: UnitOfWork, driver_id: int, warehouse_id: int) -> None:
+        driver = uow.employees.get_by_id(driver_id)
+        if driver is None:
+            raise NotFoundError(f"Сотрудник №{driver_id} не найден или заблокирован")
+        if driver.role_name != RoleName.DRIVER:
+            raise ValidationError(
+                f"{driver.full_name} не водитель: на этап можно назначить "
+                f"только сотрудника с ролью «{RoleName.DRIVER}»"
+            )
+        if driver.warehouse_id != warehouse_id:
+            raise ValidationError("Водитель должен работать на складе отправления")
+
+    @staticmethod
+    def _check_document(document: NewStageDocument) -> NewStageDocument:
+        """Файл уже сохранил web-слой; проверяем, что его данные пригодны для записи."""
+        file_name = (document.file_name or "").strip()
+        storage_path = (document.storage_path or "").strip()
+        if not file_name:
+            raise ValidationError("У документа нет имени файла")
+        if not storage_path:
+            raise ValidationError(f"Файл «{file_name}» не сохранён: нет пути в хранилище")
+        if document.size_bytes is not None and document.size_bytes < 0:
+            raise ValidationError(f"У файла «{file_name}» неверный размер")
+        return NewStageDocument(
+            file_name=file_name,
+            storage_path=storage_path,
+            content_type=document.content_type,
+            size_bytes=document.size_bytes,
+        )
 
     @staticmethod
     def _to_quantity(quantity: Decimal) -> Decimal:

@@ -55,12 +55,35 @@ class ShipmentDTO:
     stages: tuple[StageDTO, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class StageDocumentDTO:
+    id: int
+    stage_id: int
+    file_name: str
+    storage_path: str
+    content_type: str | None
+    size_bytes: int | None
+    uploaded_by: int
+    uploaded_by_name: str
+    uploaded_at: datetime
+
+
 # ---------- Входные данные ----------
 
 @dataclass(frozen=True, slots=True)
 class NewStageItem:
     product_id: int
     quantity: Decimal
+
+
+@dataclass(frozen=True, slots=True)
+class NewStageDocument:
+    """Файл, который web-слой уже сохранил. BLL записывает только его данные."""
+
+    file_name: str
+    storage_path: str
+    content_type: str | None = None
+    size_bytes: int | None = None
 
 
 @dataclass(frozen=True, slots=True)

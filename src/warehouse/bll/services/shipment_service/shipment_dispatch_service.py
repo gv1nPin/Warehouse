@@ -8,7 +8,7 @@ from warehouse.bll.interfaces.auth_service import AbstractAccessService
 from warehouse.bll.interfaces.shipment_service.abstract_shipment_dispatch_service import (
     AbstractShipmentDispatchService,
 )
-from warehouse.common import StatusName
+from warehouse.common import PermissionName, StatusName
 from warehouse.common.exceptions import InvalidStatusError, NotFoundError, ValidationError
 from warehouse.dal.unit_of_work import UnitOfWork
 
@@ -18,13 +18,16 @@ from ._sender_guards import SenderGuardsMixin
 class ShipmentDispatchService(SenderGuardsMixin, AbstractShipmentDispatchService):
     """Диспетчеризация: резерв и отправка уже готового этапа со склада сотрудника.
 
-    Черновик (маршрут, товары, водитель) собирает ShipmentDraftService —
+    Черновик (маршрут, товары, водитель, документы) собирает ShipmentDraftService —
     этот сервис его не редактирует, только резервирует остаток под готовый
-    этап и списывает его при отправке.
+    этап и списывает его при отправке. Отменяет перевозку ShipmentCancelService.
 
+    Право — SHIPMENT_DISPATCH: оно есть и у кладовщика, и у старшего кладовщика.
     Проверяем в порядке «кто → куда → что», как и в приёмке.
     Транзакцию открывает сам, поэтому вызывается прямо из web.
     """
+
+    _permission = PermissionName.SHIPMENT_DISPATCH
 
     def __init__(
         self, uow_factory: Callable[[], UnitOfWork], access: AbstractAccessService
@@ -39,6 +42,10 @@ class ShipmentDispatchService(SenderGuardsMixin, AbstractShipmentDispatchService
 
             if not stage.items:
                 raise ValidationError("В этапе нет ни одной позиции")
+            if uow.stage_documents.count_by_stage(stage_id) == 0:
+                raise ValidationError(
+                    "Прикрепите к этапу хотя бы один документ: без него резерв невозможен"
+                )
 
             warehouse_id = stage.from_warehouse.id
             # for_update блокирует строки до конца транзакции, чтобы двое
@@ -111,44 +118,6 @@ class ShipmentDispatchService(SenderGuardsMixin, AbstractShipmentDispatchService
                 stage_id,
                 warehouse_id,
                 stage.to_warehouse.id,
-            )
-            return self._stage(uow, stage_id)
-
-    def cancel_reservation(self, employee_id: int, stage_id: int) -> StageDTO:
-        with self._uow_factory() as uow:
-            actor = self._sender(uow, employee_id)
-            stage = self._stage_from_my_warehouse(uow, actor, stage_id)
-            self._require_status(uow, stage, StatusName.RESERVED)
-
-            warehouse_id = stage.from_warehouse.id
-            # for_update по той же причине, что и в reserve_stage/ship_stage:
-            # не даём двум операциям одновременно менять один и тот же резерв.
-            stock = uow.stock.get_many(
-                warehouse_id, (item.product_id for item in stage.items), for_update=True
-            )
-            for item in stage.items:
-                row = stock.get(item.product_id)
-                # Резерв делали мы же, так что расхождение здесь — сбой данных.
-                if row is None or row.reserved_quantity < item.document_quantity:
-                    raise InvalidStatusError(
-                        f"Резерв товара «{item.product_name}» на складе не найден, "
-                        f"отменить нечего"
-                    )
-                uow.stock.change(
-                    warehouse_id=warehouse_id,
-                    product_id=item.product_id,
-                    reserved_delta=-item.document_quantity,
-                )
-
-            cancelled_id = self._status_id(uow, StatusName.CANCELLED)
-            uow.stages.set_status(stage_id, cancelled_id)
-            uow.shipments.set_status(stage.shipment_id, cancelled_id)
-
-            logging.info(
-                "Сотрудник №%s отменил резерв этапа №%s на складе №%s",
-                actor.employee.id,
-                stage_id,
-                warehouse_id,
             )
             return self._stage(uow, stage_id)
 

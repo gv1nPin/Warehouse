@@ -14,8 +14,8 @@ class AbstractShipmentDispatchService(ABC):
 
         dispatch.reserve_stage(employee_id, stage_id)
         dispatch.ship_stage(employee_id, stage_id)
-        # либо, вместо отправки:
-        dispatch.cancel_reservation(employee_id, stage_id)
+
+    Отменяет перевозку не этот сервис, а ShipmentCancelService (менеджер).
 
     Работать можно только с этапами, которые уходят со склада сотрудника.
     """
@@ -25,6 +25,7 @@ class AbstractShipmentDispatchService(ABC):
         """Резервирует товары первого этапа на складе отправления.
 
         Этап -> «Зарезервировано». Не хватает остатка -> InvalidStatusError.
+        Нет ни одного документа или позиции -> ValidationError.
         """
 
     @abstractmethod
@@ -33,14 +34,4 @@ class AbstractShipmentDispatchService(ABC):
 
         Списывает товар со склада отправления (остаток и резерв),
         этап и перевозка -> «Отправлено».
-        """
-
-    @abstractmethod
-    def cancel_reservation(self, employee_id: int, stage_id: int) -> StageDTO:
-        """Отменяет резерв уже зарезервированного этапа.
-
-        Возвращает товар в свободный остаток (снимает reserved_quantity).
-        В отличие от delete_draft, запись не удаляет — резерв был реальным
-        действием на складе, поэтому этап и перевозка помечаются статусом
-        «Отменено», а не стираются. Этап не в «Зарезервировано» -> InvalidStatusError.
         """

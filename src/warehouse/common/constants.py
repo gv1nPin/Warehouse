@@ -12,16 +12,22 @@ from enum import StrEnum
 class RoleName(StrEnum):
     """Roles.role_name"""
 
-    SENIOR_STOREKEEPER = "Старший кладовщик"   # создаёт отправки и принимает
-    ADMIN = "Администратор системы"            # управляет сотрудниками
+    SENIOR_STOREKEEPER = "Старший кладовщик"   # черновики, резерв и отправка, приёмка
+    STOREKEEPER = "Кладовщик"                  # резерв и отправка, приёмка
+    MANAGER = "Менеджер"                       # смотрит все перевозки, отменяет
+    DRIVER = "Водитель"                        # везёт этап, видит только свои рейсы
+    ADMIN = "Администратор системы"            # суперпользователь: все права, все склады
 
 
 class PermissionName(StrEnum):
     """Permissions.permission_name"""
 
-    SHIPMENT_CREATE = "shipment:create"   # маршрут, черновик, товары, отправка
-    SHIPMENT_ACCEPT = "shipment:accept"   # ввод факта и приёмка
-    EMPLOYEE_MANAGE = "employee:manage"   # регистрация и блокировка сотрудников
+    SHIPMENT_CREATE = "shipment:create"       # маршрут, черновик, товары, водитель, документы
+    SHIPMENT_ACCEPT = "shipment:accept"       # ввод факта и приёмка
+    EMPLOYEE_MANAGE = "employee:manage"       # регистрация и блокировка сотрудников
+    SHIPMENT_DISPATCH = "shipment:dispatch"   # резерв и отправка
+    SHIPMENT_CANCEL = "shipment:cancel"       # отмена перевозки
+    SHIPMENT_VIEW_ALL = "shipment:view_all"   # перевозки всех складов
 
 
 class StatusName(StrEnum):

@@ -6,16 +6,26 @@ DTO ссылаются только на другие DTO и никогда на
 
 from .employee import EmployeeAuthDTO, EmployeeDTO
 from .product import ProductDTO
-from .shipment import NewStage, NewStageItem, ShipmentDTO, StageDTO, StageItemDTO
+from .shipment import (
+    NewStage,
+    NewStageDocument,
+    NewStageItem,
+    ShipmentDTO,
+    StageDocumentDTO,
+    StageDTO,
+    StageItemDTO,
+)
 from .warehouse import StockItemDTO, WarehouseDTO
 
 __all__ = [
     "EmployeeAuthDTO",
     "EmployeeDTO",
     "NewStage",
+    "NewStageDocument",
     "NewStageItem",
     "ProductDTO",
     "ShipmentDTO",
+    "StageDocumentDTO",
     "StageDTO",
     "StageItemDTO",
     "StockItemDTO",

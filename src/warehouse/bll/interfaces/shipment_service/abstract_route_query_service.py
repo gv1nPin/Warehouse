@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from warehouse.common.dto import ShipmentDTO, StageDTO
+from warehouse.common.dto import ShipmentDTO, StageDocumentDTO, StageDTO
 
 
 class AbstractRouteQueryService(ABC):
@@ -32,4 +32,11 @@ class AbstractRouteQueryService(ABC):
         """Перевозка целиком: все этапы с товарами.
 
         Нет перевозки -> NotFoundError. Нет прав -> AccessDeniedError.
+        """
+
+    @abstractmethod
+    def list_documents(self, employee_id: int, stage_id: int) -> list[StageDocumentDTO]:
+        """Документы этапа. Видит тот, кто видит сам этап.
+
+        Нет этапа -> NotFoundError. Нет прав -> AccessDeniedError.
         """

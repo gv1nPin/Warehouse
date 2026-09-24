@@ -5,7 +5,7 @@ from .employee import Employee
 from .operation_history import OperationHistory
 from .product import Product
 from .reference import Measurement, Permission, Role, RolePermission, Status
-from .shipment import Shipment, ShipmentStage, StageItem
+from .shipment import Shipment, ShipmentStage, StageDocument, StageItem
 from .stock import StockOnWarehouse
 from .warehouse import Warehouse
 
@@ -20,6 +20,7 @@ __all__ = [
     "RolePermission",
     "Shipment",
     "ShipmentStage",
+    "StageDocument",
     "StageItem",
     "Status",
     "StockOnWarehouse",
