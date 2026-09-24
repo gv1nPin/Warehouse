@@ -3,7 +3,7 @@ from collections.abc import Callable
 from datetime import datetime, timezone
 from decimal import Decimal
 
-from warehouse.common.dto import StageDTO
+from warehouse.common.dto import ShipmentDTO, StageDTO
 from warehouse.bll.interfaces.auth_service import AbstractAccessService
 from warehouse.bll.interfaces.shipment_service.abstract_shipment_dispatch_service import (
     AbstractShipmentDispatchService,
@@ -14,18 +14,11 @@ from warehouse.dal.unit_of_work import UnitOfWork
 
 from ._sender_guards import SenderGuardsMixin
 
+CANCELLABLE_STATUSES = (StatusName.DRAFT, StatusName.WAITING, StatusName.RESERVED)
+
 
 class ShipmentDispatchService(SenderGuardsMixin, AbstractShipmentDispatchService):
-    """Диспетчеризация: резерв и отправка уже готового этапа со склада сотрудника.
-
-    Черновик (маршрут, товары, водитель, документы) собирает ShipmentDraftService —
-    этот сервис его не редактирует, только резервирует остаток под готовый
-    этап и списывает его при отправке. Отменяет перевозку ShipmentCancelService.
-
-    Право — SHIPMENT_DISPATCH: оно есть и у кладовщика, и у старшего кладовщика.
-    Проверяем в порядке «кто → куда → что», как и в приёмке.
-    Транзакцию открывает сам, поэтому вызывается прямо из web.
-    """
+    """Резерв, отмена и отправка готового этапа."""
 
     _permission = PermissionName.SHIPMENT_DISPATCH
 
@@ -79,6 +72,37 @@ class ShipmentDispatchService(SenderGuardsMixin, AbstractShipmentDispatchService
             )
             return self._stage(uow, stage_id)
 
+    def cancel_shipment(self, employee_id: int, shipment_id: int) -> ShipmentDTO:
+        """Отменяет перевозку до отправки и возвращает резерв в свободный остаток."""
+        with self._uow_factory() as uow:
+            actor = self._access.get_actor(uow, employee_id)
+            self._access.require_permission(actor, PermissionName.SHIPMENT_CANCEL)
+
+            shipment = self._shipment(uow, shipment_id)
+            cancellable = self._status_ids(uow, CANCELLABLE_STATUSES)
+            if shipment.status_id not in cancellable or any(
+                stage.status_id not in cancellable for stage in shipment.stages
+            ):
+                raise InvalidStatusError(
+                    f"Перевозка в статусе «{shipment.status_name}»: отменить можно, "
+                    f"пока груз не отправлен"
+                )
+
+            reserved_id = self._status_id(uow, StatusName.RESERVED)
+            for stage in shipment.stages:
+                if stage.status_id == reserved_id:
+                    self._release_reserve(uow, stage)
+
+            cancelled_id = self._status_id(uow, StatusName.CANCELLED)
+            for stage in shipment.stages:
+                uow.stages.set_status(stage.id, cancelled_id)
+            uow.shipments.set_status(shipment_id, cancelled_id)
+
+            logging.info(
+                "Сотрудник №%s отменил перевозку №%s", actor.employee.id, shipment_id
+            )
+            return self._shipment(uow, shipment_id)
+
     def ship_stage(self, employee_id: int, stage_id: int) -> StageDTO:
         with self._uow_factory() as uow:
             actor = self._sender(uow, employee_id)
@@ -120,6 +144,33 @@ class ShipmentDispatchService(SenderGuardsMixin, AbstractShipmentDispatchService
                 stage.to_warehouse.id,
             )
             return self._stage(uow, stage_id)
+
+    @staticmethod
+    def _release_reserve(uow: UnitOfWork, stage: StageDTO) -> None:
+        """Снимает резерв этапа на складе отправления."""
+        warehouse_id = stage.from_warehouse.id
+        stock = uow.stock.get_many(
+            warehouse_id, (item.product_id for item in stage.items), for_update=True
+        )
+        for item in stage.items:
+            row = stock.get(item.product_id)
+            if row is None or row.reserved_quantity < item.document_quantity:
+                raise InvalidStatusError(
+                    f"Резерв товара «{item.product_name}» на складе №{warehouse_id} "
+                    f"не найден, отменить перевозку нельзя"
+                )
+            uow.stock.change(
+                warehouse_id=warehouse_id,
+                product_id=item.product_id,
+                reserved_delta=-item.document_quantity,
+            )
+
+    @staticmethod
+    def _shipment(uow: UnitOfWork, shipment_id: int) -> ShipmentDTO:
+        shipment = uow.shipments.get_by_id(shipment_id)
+        if shipment is None:
+            raise NotFoundError(f"Перевозка №{shipment_id} не найдена")
+        return shipment
 
     @staticmethod
     def _stage(uow: UnitOfWork, stage_id: int) -> StageDTO:

@@ -47,17 +47,16 @@ class ShipmentRepository(BaseRepository[Shipment]):
         status_id: int,
         stages: Sequence[NewStage] = (),
         stage_status_id: int | None = None,
+        first_stage_status_id: int | None = None,
     ) -> int:
-        """Создаёт отгрузку. Если переданы этапы — создаёт их (с товарами) и нумерует по порядку.
-
-        stage_status_id — статус этапов; по умолчанию такой же, как у отгрузки.
-        """
+        """Создаёт отгрузку вместе с этапами и их товарами."""
         shipment = Shipment(creator_id=creator_id, planned_date=planned_date, status_id=status_id)
+        rest_status_id = stage_status_id or status_id
         for order, stage in enumerate(stages, start=1):
             shipment.stages.append(
                 ShipmentStage(
                     stage_order=order,
-                    status_id=stage_status_id or status_id,
+                    status_id=(first_stage_status_id or rest_status_id) if order == 1 else rest_status_id,
                     from_warehouse_id=stage.from_warehouse_id,
                     to_warehouse_id=stage.to_warehouse_id,
                     driver_id=stage.driver_id,

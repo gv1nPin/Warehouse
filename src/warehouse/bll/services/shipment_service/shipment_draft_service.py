@@ -126,7 +126,6 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
             if driver_id is not None:
                 self._require_driver(uow, driver_id, route[0])
 
-            # Товары и водителя заводим только в первый этап, остальные заполнит транзит.
             stages = [
                 NewStage(
                     from_warehouse_id=from_id,
@@ -144,10 +143,10 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
                 status_id=draft_id,
                 stages=stages,
                 stage_status_id=self._status_id(uow, StatusName.WAITING),
+                first_stage_status_id=draft_id,
             )
-            # Репозиторий ставит всем этапам один статус, а первый — черновик.
-            first = uow.stages.get_by_order(shipment_id, 1)
-            uow.stages.set_status(first.id, draft_id)
+            shipment = self._shipment(uow, shipment_id)
+            first = shipment.stages[0]
             for document in documents:
                 uow.stage_documents.add(first.id, actor.employee.id, document)
 
@@ -158,7 +157,7 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
                 route,
                 len(documents),
             )
-            return self._shipment(uow, shipment_id)
+            return shipment
 
     def add_item(
         self, employee_id: int, stage_id: int, product_id: int, quantity: Decimal
