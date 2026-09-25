@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Сотрудники · Warehouse{% endblock %}
+{% block content %}
+<main class="screen">
+  <div>
+    <a class="back" href="{% url 'cabinet:home' %}">← Главная</a>
+    <div class="head">
+      <div>
+        <h1>Сотрудники</h1>
+        <p class="muted" style="margin:4px 0 0">Регистрация и блокировка. Заблокированный сотрудник не может войти.</p>
+      </div>
+      <a class="btn btn-primary" href="{% url 'cabinet:employee_register' %}">Зарегистрировать</a>
+    </div>
+  </div>
+  <div class="panel" style="padding:8px">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Сотрудник</th><th>Логин</th><th>Роль</th><th>Склад</th><th>Статус</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for e in employees %}
+          <tr>
+            <td>{{ e.name }}</td>
+            <td class="art">{{ e.login }}</td>
+            <td>{{ e.role }}</td>
+            <td>{{ e.warehouse }}</td>
+            <td>
+              {% if e.active %}
+              <span class="pill st-received">Активен</span>
+              {% else %}
+              <span class="pill st-cancelled">Заблокирован</span>
+              {% endif %}
+            </td>
+            <td class="r">
+              <form method="post" action="{% url 'cabinet:employee_toggle' e.id %}" style="display:inline">
+                {% csrf_token %}
+                <button class="btn btn-sm" type="submit">
+                  {% if e.active %}Заблокировать{% else %}Разблокировать{% endif %}
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="empty">Нет сотрудников</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <p class="note" style="margin:0">Назначить на этап можно только сотрудника с ролью «Водитель» со склада отправления.</p>
+</main>
+{% endblock %}

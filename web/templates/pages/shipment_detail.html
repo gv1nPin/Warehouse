@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Перевозка №{{ shipment.id }} · Warehouse{% endblock %}
+{% block content %}
+<main class="screen">
+  <div>
+    <a class="back" href="{% url 'cabinet:shipment_list' %}">← Перевозки</a>
+    <div class="head">
+      <div>
+        <h1>Перевозка №{{ shipment.id }}</h1>
+        <div class="meta muted" style="margin-top:6px">
+          <div>Плановая дата: <span class="num">{{ shipment.planned_date }}</span></div>
+          <div>Создал: {{ shipment.creator }}</div>
+        </div>
+      </div>
+      <span class="pill st-{{ shipment.status }}">{{ shipment.status_label }}</span>
+    </div>
+  </div>
+
+  <div class="panel section">
+    <h2 class="label">Маршрут</h2>
+    <div class="route">
+      {% for node in route_nodes %}
+        <div class="node{% if node.mine %} mine{% endif %}">
+          <b>{{ node.title }}</b><span>{{ node.city }}</span>
+        </div>
+        {% if not forloop.last %}<span class="hop">этап {{ forloop.counter }}</span>{% endif %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="panel section">
+    {% for stage in stages %}
+    <div class="stage" style="margin-bottom:14px">
+      <div class="stage-head">
+        <h3>Этап {{ stage.index }} · {{ stage.from_name }} → {{ stage.to_name }}</h3>
+        <span class="pill st-{{ stage.status }}">{{ stage.status_label }}</span>
+      </div>
+      <div class="meta">
+        <div><span>Водитель: </span>{% if stage.driver %}{{ stage.driver }}{% else %}не назначен{% endif %}</div>
+        {% if stage.shipped_at %}<div><span>Отправлен: </span><span class="num">{{ stage.shipped_at }}</span></div>{% endif %}
+      </div>
+
+      {% if stage.status == 'waiting' %}
+      <p class="note" style="margin:0">Товары заполнятся автоматически после приёмки предыдущего этапа.</p>
+      {% else %}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Артикул</th><th>Товар</th>
+              <th class="r">По документу</th>
+              {% if stage.show_fact %}<th class="r">Факт</th>{% endif %}
+              {% if stage.has_comments %}<th>Комментарий</th>{% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in stage.items %}
+            <tr class="{% if item.diff %}diff{% endif %}">
+              <td class="art">{{ item.article }}</td>
+              <td>{{ item.name }}</td>
+              <td class="r num">{{ item.qty_doc }} {{ item.unit }}</td>
+              {% if stage.show_fact %}
+              <td class="r num">{% if item.qty_fact is not None %}{{ item.qty_fact }} {{ item.unit }}{% else %}<span class="muted">—</span>{% endif %}</td>
+              {% endif %}
+              {% if stage.has_comments %}<td>{{ item.comment|default:"" }}</td>{% endif %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+
+      {% if stage.status != 'waiting' %}
+      <div class="docs">
+        <div class="docs-head">
+          <h3>Документы <span class="muted num">· {{ stage.docs|length }}</span></h3>
+          {% if stage.can_attach %}
+          <form method="post" action="{% url 'cabinet:stage_attach_doc' stage.id %}" enctype="multipart/form-data" style="display:inline">
+            {% csrf_token %}
+            <label class="btn btn-sm" for="attach-{{ stage.id }}">Прикрепить документ</label>
+            <input type="file" id="attach-{{ stage.id }}" name="document" multiple hidden onchange="this.form.submit()">
+          </form>
+          {% endif %}
+        </div>
+        {% for d in stage.docs %}
+        <div class="doc">
+          <span class="ext">{{ d.ext }}</span>
+          <span class="name">{{ d.name }}</span>
+          <span class="by">{{ d.size }} · {{ d.by }} · {{ d.at }}</span>
+          {% if stage.can_attach and d.id %}
+          <form method="post" action="{% url 'cabinet:stage_remove_doc' d.id %}" style="display:inline">
+            {% csrf_token %}
+            <input type="hidden" name="storage_path" value="{{ d.storage_path }}">
+            <button class="icon-btn" type="submit" aria-label="Открепить {{ d.name }}">✕</button>
+          </form>
+          {% endif %}
+        </div>
+        {% empty %}
+          {% if stage.status == 'draft' %}
+          <p class="warn">Документов нет. Без документа этап не зарезервировать.</p>
+          {% else %}
+          <p class="muted" style="margin:0;font-size:14px">Документов нет.</p>
+          {% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="actions">
+        {% if stage.can_reserve %}
+        <form method="post" action="{% url 'cabinet:stage_reserve' stage.id %}">{% csrf_token %}
+          <button class="btn btn-primary btn-sm" type="submit"{% if not stage.has_docs %} disabled{% endif %}>Зарезервировать</button>
+        </form>
+        {% if not stage.has_docs %}<span class="hint-inline">Сначала прикрепите документ</span>{% endif %}
+        {% endif %}
+        {% if stage.can_ship %}
+        <form method="post" action="{% url 'cabinet:stage_ship' stage.id %}">{% csrf_token %}
+          <button class="btn btn-primary btn-sm" type="submit">Отправить</button>
+        </form>
+        {% endif %}
+        {% if stage.can_go_receipt %}
+        <a class="btn btn-primary btn-sm" href="{% url 'cabinet:receipt' %}?stage={{ stage.id }}">Перейти к приёмке</a>
+        {% endif %}
+      </div>
+
+      {% if stage.status == 'cancelled' %}
+      <p class="note" style="margin:0">Перевозка отменена. Если товар был в резерве, он вернулся в свободный остаток.</p>
+      {% endif %}
+      {% if stage.status == 'discrepancy' %}
+      <p class="note" style="margin:0">Приёмка завершена, факт отличается от документа.</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if can_cancel or can_delete %}
+  <div class="actions">
+    {% if can_cancel %}
+    <form method="post" action="{% url 'cabinet:shipment_cancel' shipment.id %}"
+          onsubmit="return confirm('Отменить перевозку №{{ shipment.id }}?');">
+      {% csrf_token %}
+      <button class="btn btn-danger" type="submit">Отменить перевозку</button>
+    </form>
+    {% endif %}
+    {% if can_delete %}
+    <form method="post" action="{% url 'cabinet:shipment_delete' shipment.id %}"
+          onsubmit="return confirm('Удалить черновик №{{ shipment.id }}?');">
+      {% csrf_token %}
+      <button class="btn btn-danger" type="submit">Удалить черновик</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}
+</main>
+{% endblock %}

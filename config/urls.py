@@ -15,31 +15,9 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
-from web.views import (
-    PrototypeCabinetView, 
-    CreateDraftView, 
-    LoginView, 
-    StockListView,
-    ShipStageView,
-    AcceptStageView,
-    CancelShipmentView
-)
+from django.urls import include, path
 
 urlpatterns = [
-    # Главная страница кабинета
-    path('', PrototypeCabinetView.as_view(), name='cabinet'),
-    
-    # API Авторизации
-    path('api/auth/login/', LoginView.as_view(), name='login'),
-    
-    # API Складских остатков
-    path('api/stock/', StockListView.as_view(), name='stock_list'),
-    
-    # API Управления перевозками (Черновик, Отгрузка, Приёмка)
-    path('api/shipments/draft/', CreateDraftView.as_view(), name='create_draft'),
-    path('api/stages/<int:stage_id>/ship/', ShipStageView.as_view(), name='ship_stage'),
-    path('api/stages/<int:stage_id>/accept/', AcceptStageView.as_view(), name='accept_stage'),
-    path('api/shipments/<int:shipment_id>/cancel/', CancelShipmentView.as_view(), name='cancel_shipment'),
-
-]
+        path('admin/', admin.site.urls),
+        path('', include('web.urls')),  # или cabinet urls
+    ]

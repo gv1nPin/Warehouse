@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Приёмка · Warehouse{% endblock %}
+{% block content %}
+<main class="screen">
+  <div>
+    <a class="back" href="{% url 'cabinet:home' %}">← Главная</a>
+    <h1>Приёмка</h1>
+    <p class="muted" style="margin:4px 0 0">Этапы в статусе «Отправлено», которые едут на ваш склад.</p>
+  </div>
+
+  {% for stage in incoming %}
+  <div class="panel section">
+    <div class="stage-head">
+      <h3>
+        Перевозка №{{ stage.shipment_id }}, этап {{ stage.index }} из {{ stage.stages_total }}
+        · {{ stage.from_name }} → {{ stage.to_name }}
+      </h3>
+      <span class="pill st-shipped">Отправлено</span>
+    </div>
+    <div class="meta">
+      <div><span class="muted">Водитель: </span>{{ stage.driver|default:"—" }}</div>
+      {% if stage.shipped_at %}<div><span class="muted">Отправлен: </span><span class="num">{{ stage.shipped_at }}</span></div>{% endif %}
+    </div>
+
+    <form method="post" action="{% url 'cabinet:stage_accept' stage.id %}">
+      {% csrf_token %}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Артикул</th><th>Товар</th>
+              <th class="r">По документу</th>
+              <th class="r">Факт</th>
+              <th>Комментарий</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in stage.items %}
+            <tr>
+              <td class="art">{{ item.article }}</td>
+              <td>{{ item.name }}</td>
+              <td class="r num">{{ item.qty_doc }} {{ item.unit }}</td>
+              <td class="r">
+                <input class="input fact-input" name="fact_{{ item.id }}" inputmode="decimal"
+                       value="{{ item.qty_doc }}" aria-label="Факт, {{ item.name }}">
+              </td>
+              <td>
+                <input class="input comment-input" name="com_{{ item.id }}"
+                       placeholder="Нужен, если факт отличается" aria-label="Комментарий, {{ item.name }}">
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="actions" style="align-items:center;margin-top:12px">
+        <button class="btn btn-primary" type="submit">Принять этап</button>
+      </div>
+    </form>
+  </div>
+  {% empty %}
+  <div class="panel"><p class="muted" style="margin:0">Нет этапов, ожидающих приёмки на вашем складе.</p></div>
+  {% endfor %}
+</main>
+{% endblock %}
