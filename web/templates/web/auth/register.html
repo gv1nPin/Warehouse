@@ -1,0 +1,31 @@
+{% extends 'web/base.html' %}
+
+{% block title %}Новый сотрудник{% endblock %}
+
+{% block content %}
+<main class="screen">
+  <div>
+    <a class="back" href="{% url 'home' %}">← Главная</a>
+    <div class="head">
+      <div>
+        <h1>Новый сотрудник</h1>
+        <p class="muted" style="margin:4px 0 0">Сотрудник входит с этим логином и паролем. Права даёт роль.</p>
+      </div>
+    </div>
+  </div>
+
+  <form class="panel" method="post" action="{% url 'employee_new' %}" style="display:grid;gap:16px;max-width:520px">
+    {% csrf_token %}
+    {% if error %}<p class="error" role="alert" style="margin:0">{{ error }}</p>{% endif %}
+    {% for field in form %}
+      <div class="field">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% for message in field.errors %}<span class="error">{{ message }}</span>{% endfor %}
+      </div>
+    {% endfor %}
+    {% for message in form.non_field_errors %}<p class="error" style="margin:0">{{ message }}</p>{% endfor %}
+    <button class="btn btn-primary" type="submit">Зарегистрировать</button>
+  </form>
+</main>
+{% endblock %}

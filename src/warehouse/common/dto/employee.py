@@ -18,6 +18,24 @@ class EmployeeDTO:
 
 
 @dataclass(frozen=True, slots=True)
+class NewEmployee:
+    """Данные формы регистрации сотрудника."""
+
+    first_name: str
+    last_name: str
+    login: str
+    password: str
+    warehouse_id: int
+    role_id: int
+
+
+@dataclass(frozen=True, slots=True)
+class RoleDTO:
+    id: int
+    name: str
+
+
+@dataclass(frozen=True, slots=True)
 class EmployeeAuthDTO:
     """Только для входа на сайт: сотрудник + хэш пароля."""
 

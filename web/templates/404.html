@@ -1,0 +1,13 @@
+{% extends 'web/base.html' %}
+
+{% block title %}Не найдено{% endblock %}
+
+{% block content %}
+<main class="screen">
+  <div>
+    <a class="back" href="{% url 'home' %}">← Главная</a>
+    <h1>Не найдено</h1>
+  </div>
+  <div class="panel"><p style="margin:0" class="muted">{{ exception|default:'Такой страницы нет' }}</p></div>
+</main>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% load static %}<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{% block title %}Кабинет склада{% endblock %} · Warehouse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="{% static 'web/app.css' %}">
+{% block head %}{% endblock %}
+</head>
+<body>
+<div class="wrap">
+  {% block appbar %}
+  <header class="appbar">
+    <a class="brand" href="{% url 'home' %}"><span class="mark">W</span>Warehouse</a>
+    <div class="user">
+      <div class="who"><b>{{ employee_name }}</b><span>{{ role_name }} · {{ warehouse_title }}</span></div>
+      {% if 'employee:manage' in perms %}
+        <a class="btn btn-round btn-sm" href="{% url 'employee_new' %}">Новый сотрудник</a>
+      {% endif %}
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button class="btn btn-round btn-sm" type="submit">Выйти</button>
+      </form>
+    </div>
+  </header>
+  {% endblock %}
+
+  {% block content %}{% endblock %}
+</div>
+
+{% if messages %}
+<div class="toast" id="toast" role="status" aria-live="polite">
+  {% for message in messages %}<div>{{ message }}</div>{% endfor %}
+</div>
+<script>setTimeout(() => { document.getElementById('toast').hidden = true; }, 4000);</script>
+{% endif %}
+{% block scripts %}{% endblock %}
+</body>
+</html>
