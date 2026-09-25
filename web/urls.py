@@ -1,6 +1,7 @@
 """
 URL-маршруты кабинета склада.
 
+Страницы (HTML) — server-side render вместо SPA index.html.
 API (JSON) — для автотестов / будущих клиентов.
 """
 from django.urls import path

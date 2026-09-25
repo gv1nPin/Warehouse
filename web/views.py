@@ -1,6 +1,7 @@
 """
 Серверный рендер страниц кабинета (вместо SPA index.html).
 
+Логика JS из прототипа намеренно не переносится: каждое действие —
 отдельный HTTP-запрос (GET страница / POST форма), view вызывает BLL.
 """
 from __future__ import annotations
@@ -34,6 +35,24 @@ from django.core.files.base import ContentFile
 
 from warehouse.common.dto import NewStageDocument, NewStageItem
 from warehouse.common.exceptions import BusinessError
+
+# Логирование границы web → DTO → BLL
+try:
+    from controller_logging import (  # когда файл лежит рядом с views
+        log_bll_call,
+        log_bll_ok,
+        log_bll_error,
+        dto_preview,
+    )
+except ImportError:
+    from .controller_logging import (  # package-style: web.controller_logging
+        log_bll_call,
+        log_bll_ok,
+        log_bll_error,
+        dto_preview,
+    )
+import logging
+_log = logging.getLogger("web.controllers")
 
 
 STATUS_LABELS = {
@@ -163,14 +182,21 @@ class LoginPageView(View):
         login = (request.POST.get("login") or "").strip()
         password = request.POST.get("password") or ""
         try:
+            log_bll_call("LoginService.login", employee_id=None, login=login)
             auth_dto = login_service.login(login=login, password=password)
             emp = auth_dto.employee
+            log_bll_ok(
+                "LoginService.login",
+                dto_preview(emp),
+                employee_id=getattr(emp, "id", None),
+            )
             request.session["employee_id"] = emp.id
             request.session["role_name"] = getattr(emp, "role_name", "") or ""
             request.session["employee_name"] = getattr(emp, "full_name", None) or getattr(emp, "name", login)
             request.session["warehouse_label"] = getattr(emp, "warehouse_title", "") or ""
             return redirect("cabinet:home")
         except BusinessError as exc:
+            log_bll_error("LoginService.login", exc, employee_id=None)
             ctx = {
                 "form": {
                     "login": type("E", (), {"value": login, "errors": []})(),
@@ -203,8 +229,11 @@ class HomePageView(View):
 
         # Список этапов для счётчиков (товары не нужны)
         try:
+            log_bll_call("RouteQueryService.list_routes", employee_id=employee_id, only_active=False)
             stages = query_service.list_routes(employee_id, only_active=False)
-        except BusinessError:
+            log_bll_ok("RouteQueryService.list_routes", count=len(stages))
+        except BusinessError as exc:
+            log_bll_error("RouteQueryService.list_routes", exc, employee_id=employee_id)
             stages = []
 
         def count_draft():
@@ -338,8 +367,11 @@ class ShipmentListPageView(View):
         status_filter = request.GET.get("status") or "all"
 
         try:
+            log_bll_call("RouteQueryService.list_routes", employee_id=employee_id, only_active=False)
             stages = query_service.list_routes(employee_id, only_active=False)
-        except BusinessError:
+            log_bll_ok("RouteQueryService.list_routes", count=len(stages))
+        except BusinessError as exc:
+            log_bll_error("RouteQueryService.list_routes", exc, employee_id=employee_id)
             stages = []
 
         rows = []
@@ -418,8 +450,22 @@ class ShipmentDetailPageView(View):
     ) -> HttpResponse:
         employee_id = request.session["employee_id"]
         try:
+            log_bll_call(
+                "RouteQueryService.get_shipment_progress",
+                employee_id=employee_id,
+                shipment_id=shipment_id,
+            )
             shipment = query_service.get_shipment_progress(employee_id, shipment_id)
+            log_bll_ok(
+                "RouteQueryService.get_shipment_progress",
+                dto_preview(shipment),
+            )
         except BusinessError as exc:
+            log_bll_error(
+                "RouteQueryService.get_shipment_progress",
+                exc,
+                employee_id=employee_id,
+            )
             messages.error(request, getattr(exc, "message", str(exc)))
             return redirect("cabinet:shipment_list")
 
@@ -613,6 +659,15 @@ class ShipmentCreatePageView(View):
                 y, m, d = planned_date.split("-")
                 planned_date = date_cls(int(y), int(m), int(d))
 
+            log_bll_call(
+                "ShipmentDraftService.create_draft",
+                employee_id=employee_id,
+                planned_date=str(planned_date),
+                route=route,
+                items=dto_preview(stage_items),
+                driver_id=driver_id,
+                documents=dto_preview(documents),
+            )
             shipment_dto = draft_service.create_draft(
                 employee_id=employee_id,
                 planned_date=planned_date,
@@ -621,12 +676,14 @@ class ShipmentCreatePageView(View):
                 driver_id=driver_id,
                 documents=documents,
             )
+            log_bll_ok("ShipmentDraftService.create_draft", dto_preview(shipment_dto))
             sid = getattr(shipment_dto, "id", None)
             messages.success(request, f"Черновик №{sid} создан")
             if sid:
                 return redirect("cabinet:shipment_detail", shipment_id=sid)
             return redirect("cabinet:shipment_list")
         except BusinessError as exc:
+            log_bll_error("ShipmentDraftService.create_draft", exc, employee_id=employee_id)
             return self._render(request, from_post=True, error=exc.message)
 
     def _render(self, request: HttpRequest, from_post: bool = False, error: str | None = None) -> HttpResponse:
@@ -688,8 +745,11 @@ class ReceiptPageView(View):
 
         employee_id = request.session["employee_id"]
         try:
+            log_bll_call("RouteQueryService.list_routes", employee_id=employee_id, only_active=True)
             stages = query_service.list_routes(employee_id, only_active=True)
-        except BusinessError:
+            log_bll_ok("RouteQueryService.list_routes", count=len(stages), filter="incoming_candidates")
+        except BusinessError as exc:
+            log_bll_error("RouteQueryService.list_routes", exc, employee_id=employee_id)
             stages = []
 
         incoming = []
@@ -745,8 +805,21 @@ class StockPageView(View):
         employee_id = request.session["employee_id"]
         q = (request.GET.get("q") or "").strip().lower()
         try:
+            log_bll_call(
+                "RouteQueryService.get_stock_by_employee_warehouse",
+                employee_id=employee_id,
+            )
             stocks = query_service.get_stock_by_employee_warehouse(employee_id)
-        except (BusinessError, AttributeError):
+            log_bll_ok(
+                "RouteQueryService.get_stock_by_employee_warehouse",
+                count=len(stocks),
+            )
+        except (BusinessError, AttributeError) as exc:
+            log_bll_error(
+                "RouteQueryService.get_stock_by_employee_warehouse",
+                exc if isinstance(exc, Exception) else Exception(str(exc)),
+                employee_id=employee_id,
+            )
             stocks = []
 
         rows = []
@@ -793,7 +866,9 @@ class DocsPageView(View):
         employee_id = request.session["employee_id"]
         docs = []
         try:
+            log_bll_call("RouteQueryService.list_routes", employee_id=employee_id, only_active=False, purpose="docs")
             stages = query_service.list_routes(employee_id, only_active=False)
+            log_bll_ok("RouteQueryService.list_routes", count=len(stages), purpose="docs")
             for s in stages:
                 stage_id = getattr(s, "id", None)
                 if not stage_id:
@@ -894,9 +969,20 @@ class StageReserveView(View):
     ) -> HttpResponse:
         employee_id = request.session["employee_id"]
         try:
-            dispatch_service.reserve_stage(employee_id=employee_id, stage_id=stage_id)
+            log_bll_call(
+                "ShipmentDispatchService.reserve_stage",
+                employee_id=employee_id,
+                stage_id=stage_id,
+            )
+            stage_dto = dispatch_service.reserve_stage(employee_id=employee_id, stage_id=stage_id)
+            log_bll_ok("ShipmentDispatchService.reserve_stage", dto_preview(stage_dto))
             messages.success(request, "Этап зарезервирован")
         except BusinessError as exc:
+            log_bll_error(
+                "ShipmentDispatchService.reserve_stage",
+                exc,
+                employee_id=employee_id,
+            )
             messages.error(request, getattr(exc, "message", str(exc)))
         # вернуться на карточку — shipment_id из referer/query
         next_url = request.POST.get("next") or request.META.get("HTTP_REFERER") or reverse("cabinet:shipment_list")
@@ -914,10 +1000,21 @@ class StageShipView(View):
     ) -> HttpResponse:
         employee_id = request.session["employee_id"]
         try:
-            dispatch_service.ship_stage(employee_id=employee_id, stage_id=stage_id)
+            log_bll_call(
+                "ShipmentDispatchService.ship_stage",
+                employee_id=employee_id,
+                stage_id=stage_id,
+            )
+            stage_dto = dispatch_service.ship_stage(employee_id=employee_id, stage_id=stage_id)
+            log_bll_ok("ShipmentDispatchService.ship_stage", dto_preview(stage_dto))
             messages.success(request, "Этап отправлен")
         except BusinessError as exc:
-            messages.error(request, exc.message)
+            log_bll_error(
+                "ShipmentDispatchService.ship_stage",
+                exc,
+                employee_id=employee_id,
+            )
+            messages.error(request, getattr(exc, "message", str(exc)))
         next_url = request.POST.get("next") or request.META.get("HTTP_REFERER") or reverse("cabinet:shipment_list")
         return redirect(next_url)
 
@@ -947,15 +1044,34 @@ class StageAcceptView(View):
                 raw = (val or "").replace(",", ".").replace(" ", "")
                 qty = Decimal(raw)
                 comment = (request.POST.get(f"com_{item_id}") or "").strip() or None
+                log_bll_call(
+                    "ShipmentReceiptService.enter_actual_quantity",
+                    employee_id=employee_id,
+                    item_id=item_id,
+                    quantity=str(qty),
+                    comment=comment,
+                )
                 receive_service.enter_actual_quantity(
                     employee_id=employee_id,
                     item_id=item_id,
                     quantity=qty,
                     comment=comment,
                 )
-            receive_service.accept_stage(employee_id=employee_id, stage_id=stage_id)
+                log_bll_ok("ShipmentReceiptService.enter_actual_quantity", item_id=item_id)
+            log_bll_call(
+                "ShipmentReceiptService.accept_stage",
+                employee_id=employee_id,
+                stage_id=stage_id,
+            )
+            stage_dto = receive_service.accept_stage(employee_id=employee_id, stage_id=stage_id)
+            log_bll_ok("ShipmentReceiptService.accept_stage", dto_preview(stage_dto))
             messages.success(request, "Этап принят")
         except (BusinessError, InvalidOperation, ValueError) as exc:
+            log_bll_error(
+                "ShipmentReceiptService.accept_stage",
+                exc if isinstance(exc, Exception) else Exception(str(exc)),
+                employee_id=employee_id,
+            )
             msg = getattr(exc, "message", None) or str(exc)
             messages.error(request, msg)
         return redirect("cabinet:receipt")
@@ -1000,16 +1116,32 @@ class StageAttachDocView(View):
                     content_type=getattr(f, "content_type", None),
                     size_bytes=getattr(f, "size", None),
                 )
-                # 2) метаданные в BLL
-                draft_service.attach_document(
+                log_bll_call(
+                    "ShipmentDraftService.attach_document",
+                    employee_id=employee_id,
+                    stage_id=stage_id,
+                    document=dto_preview(doc),
+                )
+                doc_dto = draft_service.attach_document(
                     employee_id=employee_id,
                     stage_id=stage_id,
                     document=doc,
                 )
+                log_bll_ok("ShipmentDraftService.attach_document", dto_preview(doc_dto))
                 attached += 1
             except BusinessError as exc:
+                log_bll_error(
+                    "ShipmentDraftService.attach_document",
+                    exc,
+                    employee_id=employee_id,
+                )
                 messages.error(request, getattr(exc, "message", str(exc)))
             except Exception as exc:  # noqa: BLE001 — показать пользователю
+                log_bll_error(
+                    "ShipmentDraftService.attach_document",
+                    exc,
+                    employee_id=employee_id,
+                )
                 messages.error(request, f"Не удалось сохранить «{getattr(f, 'name', 'file')}»: {exc}")
 
         if attached:
@@ -1040,11 +1172,23 @@ class StageRemoveDocView(View):
         employee_id = request.session["employee_id"]
         storage_path = (request.POST.get("storage_path") or "").strip()
         try:
+            log_bll_call(
+                "ShipmentDraftService.remove_document",
+                employee_id=employee_id,
+                document_id=document_id,
+                storage_path=storage_path,
+            )
             draft_service.remove_document(employee_id=employee_id, document_id=document_id)
             if storage_path and default_storage.exists(storage_path):
                 default_storage.delete(storage_path)
+            log_bll_ok("ShipmentDraftService.remove_document", document_id=document_id)
             messages.success(request, "Документ откреплён")
         except BusinessError as exc:
+            log_bll_error(
+                "ShipmentDraftService.remove_document",
+                exc,
+                employee_id=employee_id,
+            )
             messages.error(request, getattr(exc, "message", str(exc)))
         next_url = request.POST.get("next") or request.META.get("HTTP_REFERER") or reverse("cabinet:shipment_list")
         return redirect(next_url)
@@ -1062,10 +1206,23 @@ class ShipmentCancelView(View):
     ) -> HttpResponse:
         employee_id = request.session["employee_id"]
         try:
-            dispatch_service.cancel_shipment(employee_id=employee_id, shipment_id=shipment_id)
+            log_bll_call(
+                "ShipmentDispatchService.cancel_shipment",
+                employee_id=employee_id,
+                shipment_id=shipment_id,
+            )
+            shipment_dto = dispatch_service.cancel_shipment(
+                employee_id=employee_id, shipment_id=shipment_id
+            )
+            log_bll_ok("ShipmentDispatchService.cancel_shipment", dto_preview(shipment_dto))
             messages.success(request, f"Перевозка №{shipment_id} отменена")
         except BusinessError as exc:
-            messages.error(request, exc.message)
+            log_bll_error(
+                "ShipmentDispatchService.cancel_shipment",
+                exc,
+                employee_id=employee_id,
+            )
+            messages.error(request, getattr(exc, "message", str(exc)))
         return redirect("cabinet:shipment_detail", shipment_id=shipment_id)
 
 
@@ -1080,13 +1237,24 @@ class ShipmentDeleteView(View):
     ) -> HttpResponse:
         employee_id = request.session["employee_id"]
         try:
-            if hasattr(draft_service, "delete_draft"):
-                draft_service.delete_draft(employee_id=employee_id, shipment_id=shipment_id)
-                messages.success(request, f"Черновик №{shipment_id} удалён")
-            else:
-                messages.info(request, "delete_draft пока нет в BLL")
+            log_bll_call(
+                "ShipmentDraftService.delete_draft",
+                employee_id=employee_id,
+                shipment_id=shipment_id,
+            )
+            draft_service.delete_draft(employee_id=employee_id, shipment_id=shipment_id)
+            log_bll_ok("ShipmentDraftService.delete_draft", shipment_id=shipment_id)
+            messages.success(request, f"Черновик №{shipment_id} удалён")
         except BusinessError as exc:
-            messages.error(request, exc.message)
+            log_bll_error(
+                "ShipmentDraftService.delete_draft",
+                exc,
+                employee_id=employee_id,
+            )
+            messages.error(request, getattr(exc, "message", str(exc)))
+        except AttributeError as exc:
+            log_bll_error("ShipmentDraftService.delete_draft", exc, employee_id=employee_id)
+            messages.info(request, "delete_draft пока нет в BLL")
         return redirect("cabinet:shipment_list")
 
 
@@ -1099,14 +1267,29 @@ class CreateDraftAPIView(View):
         except Exception:
             return JsonResponse({"error": "Невалидный JSON"}, status=400)
         employee_id = request.session.get("employee_id", 1)
-        dto = draft_service.create_draft(
+        log_bll_call(
+            "ShipmentDraftService.create_draft",
             employee_id=employee_id,
             planned_date=body.get("planned_date"),
             route=body.get("route", []),
-            items=body.get("items", []),
+            items=dto_preview(body.get("items", [])),
             driver_id=body.get("driver_id"),
-            documents=body.get("documents", []),
+            documents=dto_preview(body.get("documents", [])),
+            via="api",
         )
+        try:
+            dto = draft_service.create_draft(
+                employee_id=employee_id,
+                planned_date=body.get("planned_date"),
+                route=body.get("route", []),
+                items=body.get("items", []),
+                driver_id=body.get("driver_id"),
+                documents=body.get("documents", []),
+            )
+            log_bll_ok("ShipmentDraftService.create_draft", dto_preview(dto), via="api")
+        except BusinessError as exc:
+            log_bll_error("ShipmentDraftService.create_draft", exc, employee_id=employee_id)
+            raise
         return JsonResponse(asdict(dto), status=201)
 
 
@@ -1115,7 +1298,18 @@ class ShipStageAPIView(View):
     @inject
     def post(self, request, stage_id: int, dispatch_service: ShipmentDispatchService = Provide[Container.dispatch_service], **kwargs):
         employee_id = request.session.get("employee_id", 1)
-        dto = dispatch_service.ship_stage(employee_id=employee_id, stage_id=stage_id)
+        log_bll_call(
+            "ShipmentDispatchService.ship_stage",
+            employee_id=employee_id,
+            stage_id=stage_id,
+            via="api",
+        )
+        try:
+            dto = dispatch_service.ship_stage(employee_id=employee_id, stage_id=stage_id)
+            log_bll_ok("ShipmentDispatchService.ship_stage", dto_preview(dto), via="api")
+        except BusinessError as exc:
+            log_bll_error("ShipmentDispatchService.ship_stage", exc, employee_id=employee_id)
+            raise
         return JsonResponse(asdict(dto), status=200)
 
 
@@ -1124,7 +1318,18 @@ class AcceptStageAPIView(View):
     @inject
     def post(self, request, stage_id: int, receive_service: ShipmentReceiptService = Provide[Container.receive_service], **kwargs):
         employee_id = request.session.get("employee_id", 1)
-        dto = receive_service.accept_stage(employee_id=employee_id, stage_id=stage_id)
+        log_bll_call(
+            "ShipmentReceiptService.accept_stage",
+            employee_id=employee_id,
+            stage_id=stage_id,
+            via="api",
+        )
+        try:
+            dto = receive_service.accept_stage(employee_id=employee_id, stage_id=stage_id)
+            log_bll_ok("ShipmentReceiptService.accept_stage", dto_preview(dto), via="api")
+        except BusinessError as exc:
+            log_bll_error("ShipmentReceiptService.accept_stage", exc, employee_id=employee_id)
+            raise
         return JsonResponse(asdict(dto), status=200)
 
 
@@ -1136,7 +1341,13 @@ class LoginAPIView(View):
             body = __import__("json").loads(request.body)
         except Exception:
             return JsonResponse({"error": "Невалидный JSON"}, status=400)
-        auth_dto = login_service.login(login=body.get("login"), password=body.get("password"))
+        log_bll_call("LoginService.login", employee_id=None, login=body.get("login"), via="api")
+        try:
+            auth_dto = login_service.login(login=body.get("login"), password=body.get("password"))
+            log_bll_ok("LoginService.login", dto_preview(auth_dto.employee), via="api")
+        except BusinessError as exc:
+            log_bll_error("LoginService.login", exc, employee_id=None)
+            raise
         request.session["employee_id"] = auth_dto.employee.id
         request.session["role_name"] = getattr(auth_dto.employee, "role_name", "")
         return JsonResponse(asdict(auth_dto.employee), status=200)
@@ -1146,7 +1357,25 @@ class StockListAPIView(View):
     @inject
     def get(self, request, query_service: RouteQueryService = Provide[Container.query_service], **kwargs):
         employee_id = request.session.get("employee_id", 1)
-        stocks = query_service.get_stock_by_employee_warehouse(employee_id)
+        log_bll_call(
+            "RouteQueryService.get_stock_by_employee_warehouse",
+            employee_id=employee_id,
+            via="api",
+        )
+        try:
+            stocks = query_service.get_stock_by_employee_warehouse(employee_id)
+            log_bll_ok(
+                "RouteQueryService.get_stock_by_employee_warehouse",
+                count=len(stocks),
+                via="api",
+            )
+        except BusinessError as exc:
+            log_bll_error(
+                "RouteQueryService.get_stock_by_employee_warehouse",
+                exc,
+                employee_id=employee_id,
+            )
+            raise
         return JsonResponse({"stocks": [asdict(s) for s in stocks]}, status=200)
 
 
@@ -1155,7 +1384,22 @@ class CancelShipmentAPIView(View):
     @inject
     def post(self, request, shipment_id: int, dispatch_service: ShipmentDispatchService = Provide[Container.dispatch_service], **kwargs):
         employee_id = request.session.get("employee_id", 1)
-        dto = dispatch_service.cancel_shipment(employee_id=employee_id, shipment_id=shipment_id)
+        log_bll_call(
+            "ShipmentDispatchService.cancel_shipment",
+            employee_id=employee_id,
+            shipment_id=shipment_id,
+            via="api",
+        )
+        try:
+            dto = dispatch_service.cancel_shipment(employee_id=employee_id, shipment_id=shipment_id)
+            log_bll_ok("ShipmentDispatchService.cancel_shipment", dto_preview(dto), via="api")
+        except BusinessError as exc:
+            log_bll_error(
+                "ShipmentDispatchService.cancel_shipment",
+                exc,
+                employee_id=employee_id,
+            )
+            raise
         return JsonResponse(asdict(dto), status=200)
 
 
