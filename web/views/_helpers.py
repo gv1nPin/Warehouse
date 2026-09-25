@@ -81,7 +81,7 @@ def home_layout(request: HttpRequest) -> dict[str, list[str]]:
             main.insert(0, "create")
         if has(PermissionName.SHIPMENT_ACCEPT) and "receipt" not in main:
             main.append("receipt")
-        extra.extend(["employees", "refs"])
+        extra.extend(["employees", "refs", "operations"])
 
     return {"counters": uniq(counters), "main": uniq(main), "extra": uniq(extra)}
 

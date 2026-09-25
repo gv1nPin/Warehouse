@@ -126,6 +126,11 @@ def home_view(request):
             "d": "Этапы, где вы водитель",
             "url": reverse("shipments") + "?trips=1",
         },
+        "operations": {
+            "t": "Журнал операций",
+            "d": "Аудит действий сотрудников",
+            "url": reverse("operations"),
+        },
     }
 
     return render(

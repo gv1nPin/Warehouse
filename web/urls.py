@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import api, auth, detail, draft, home, receipt, shipments
+from .views import api, auth, detail, draft, home, operations, receipt, shipments
 
 urlpatterns = [
     path('login/', auth.login_view, name='login'),
@@ -9,6 +9,9 @@ urlpatterns = [
 
     path('', home.home_view, name='home'),
     path('stock/', home.stock_view, name='stock'),
+
+    path('operations/', operations.operations_list_view, name='operations'),
+    path('operations/<int:operation_id>/', operations.operation_detail_view, name='operation_detail'),
 
     path('shipments/', shipments.shipment_list_view, name='shipments'),
 

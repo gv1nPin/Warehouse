@@ -1,0 +1,100 @@
+{% extends 'web/base.html' %}
+{% block title %}Журнал операций · Warehouse{% endblock %}
+{% block content %}
+<main class="screen">
+  <div>
+    <a class="back" href="{% url 'home' %}">← Главная</a>
+    <div class="head">
+      <div>
+        <h1>Журнал операций</h1>
+        <p class="muted" style="margin:4px 0 0">Аудит действий сотрудников (таблица operation_history)</p>
+      </div>
+    </div>
+  </div>
+
+  <form method="get" class="panel" style="padding:12px;display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));align-items:end">
+    <div class="field">
+      <label for="employee_id">ID сотрудника</label>
+      <input class="input" id="employee_id" name="employee_id" value="{{ q_employee_id }}" placeholder="все">
+    </div>
+    <div class="field">
+      <label for="operation_type">Тип операции</label>
+      <select class="input" id="operation_type" name="operation_type">
+        <option value="">Все</option>
+        {% for t in operation_types %}
+        <option value="{{ t }}" {% if t == q_operation_type %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="entity_name">Сущность</label>
+      <select class="input" id="entity_name" name="entity_name">
+        <option value="">Все</option>
+        {% for n in entity_names %}
+        <option value="{{ n }}" {% if n == q_entity_name %}selected{% endif %}>{{ n }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="entity_id">ID сущности</label>
+      <input class="input" id="entity_id" name="entity_id" value="{{ q_entity_id }}" placeholder="любой">
+    </div>
+    <div class="field">
+      <label for="since">С</label>
+      <input class="input" id="since" name="since" type="datetime-local" value="{{ q_since }}">
+    </div>
+    <div class="field">
+      <label for="until">По</label>
+      <input class="input" id="until" name="until" type="datetime-local" value="{{ q_until }}">
+    </div>
+    <div>
+      <button class="btn btn-primary" type="submit">Применить</button>
+      <a class="btn" href="{% url 'operations' %}">Сбросить</a>
+    </div>
+  </form>
+
+  <div class="panel" style="padding:8px;margin-top:12px">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>№</th>
+            <th>Время</th>
+            <th>Сотрудник</th>
+            <th>Операция</th>
+            <th>Сущность</th>
+            <th>ID</th>
+            <th>Детали</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td class="art">{{ r.id }}</td>
+            <td>{{ r.created_at }}</td>
+            <td>{{ r.employee_name }} <span class="muted">#{{ r.employee_id }}</span></td>
+            <td><span class="pill">{{ r.operation_type }}</span></td>
+            <td>{{ r.entity_name }}</td>
+            <td class="art">{% if r.entity_id %}{{ r.entity_id }}{% else %}—{% endif %}</td>
+            <td class="muted" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ r.details_preview }}">{{ r.details_preview }}</td>
+            <td class="r"><a class="btn btn-sm" href="{% url 'operation_detail' r.id %}">Открыть</a></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="muted">Записей нет</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-top:12px">
+    {% if prev_offset is not None %}
+    <a class="btn" href="?offset={{ prev_offset }}&limit={{ limit }}&employee_id={{ q_employee_id }}&operation_type={{ q_operation_type }}&entity_name={{ q_entity_name }}&entity_id={{ q_entity_id }}&since={{ q_since }}&until={{ q_until }}">← Назад</a>
+    {% endif %}
+    {% if next_offset is not None %}
+    <a class="btn" href="?offset={{ next_offset }}&limit={{ limit }}&employee_id={{ q_employee_id }}&operation_type={{ q_operation_type }}&entity_name={{ q_entity_name }}&entity_id={{ q_entity_id }}&since={{ q_since }}&until={{ q_until }}">Ещё →</a>
+    {% endif %}
+  </div>
+</main>
+{% endblock %}

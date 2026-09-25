@@ -10,7 +10,8 @@ from container import Container
 
 if TYPE_CHECKING:
     from warehouse.bll.services.auth_service import LoginService
-    from warehouse.bll.services.employee_service.employee_service import EmployeeService
+    from warehouse.bll.services.employee_service import EmployeeService
+    from warehouse.bll.services.operation_history_service import OperationHistoryService
     from warehouse.bll.services.shipment_service import (
         RouteQueryService,
         ShipmentDispatchService,
@@ -20,7 +21,6 @@ if TYPE_CHECKING:
 
 container = Container()
 
-# Не все версии Container имеют config (иначе AttributeError: DynamicContainer)
 _config = getattr(container, "config", None)
 if _config is not None and hasattr(_config, "from_dict"):
     try:
@@ -56,3 +56,7 @@ def receipt_service() -> ShipmentReceiptService:
 
 def route_service() -> RouteQueryService:
     return container.query_service()
+
+
+def history_service() -> OperationHistoryService:
+    return container.history_service()
