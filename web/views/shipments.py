@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """Список перевозок / рейсов."""
 from __future__ import annotations
 
@@ -13,18 +12,11 @@ from ..auth import can, employee_required
 from ..services import route_service
 from ..status_ui import STATUS_FILTERS, normalize_status_query, status_css, status_label
 from ._helpers import bll_call, bll_err, bll_ok, eid
-=======
-from django.views.decorators.http import require_GET
-
-from ..auth import employee_required
-from ._stub import stub_page
->>>>>>> main
 
 
 @require_GET
 @employee_required
 def shipment_list_view(request):
-<<<<<<< HEAD
     """Список этапов с фильтром status и поиском q."""
     employee_id = eid(request)
     q = (request.GET.get("q") or "").strip()
@@ -103,7 +95,3 @@ def shipment_list_view(request):
             "rows": rows,
         },
     )
-=======
-    """Список перевозок с фильтрами и поиском."""
-    return stub_page(request, 'Перевозки')
->>>>>>> main

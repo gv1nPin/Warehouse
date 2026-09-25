@@ -1,6 +1,5 @@
 """Готовые сервисы BLL для view. Во view сервис берём только отсюда."""
 
-<<<<<<< HEAD
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -18,24 +17,21 @@ if TYPE_CHECKING:
         ShipmentDraftService,
         ShipmentReceiptService,
     )
-=======
-from django.conf import settings
-
-from container import Container
-from warehouse.bll.services.auth_service import LoginService
-from warehouse.bll.services.employee_service import EmployeeService
-from warehouse.bll.services.shipment_service import (
-    RouteQueryService,
-    ShipmentDispatchService,
-    ShipmentDraftService,
-    ShipmentReceiptService,
-)
->>>>>>> main
 
 container = Container()
-container.config.from_dict(
-    {"jwt_secret": settings.JWT_SECRET, "jwt_expire_minutes": settings.JWT_EXPIRE_MINUTES}
-)
+
+# Не все версии Container имеют config (иначе AttributeError: DynamicContainer)
+_config = getattr(container, "config", None)
+if _config is not None and hasattr(_config, "from_dict"):
+    try:
+        _config.from_dict(
+            {
+                "jwt_secret": getattr(settings, "JWT_SECRET", None),
+                "jwt_expire_minutes": int(getattr(settings, "JWT_EXPIRE_MINUTES", 8 * 60)),
+            }
+        )
+    except Exception:
+        pass
 
 
 def login_service() -> LoginService:
