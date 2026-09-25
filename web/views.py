@@ -76,6 +76,7 @@ STATUS_FILTERS = [
 ]
 
 # Права по ролям — зеркало RolePermissions / прототипа
+# Ревью: права не задаём в коде — договорились, что они приходят из БД (RolePermissions). После входа LoginService кладёт их в токен (TokenPayloadDTO.permissions); проверять так: PermissionName.SHIPMENT_CREATE in permissions. Тогда ROLE_PERMS, ROLE_HOME и _role_key не нужны.
 ROLE_PERMS: dict[str, set[str]] = {
     "senior": {"create", "dispatch", "accept"},
     "keeper": {"dispatch", "accept"},
@@ -133,6 +134,7 @@ def _role_key(role_name: str | None) -> str:
     return mapping.get(n, mapping.get(role_name, "keeper"))
 
 
+# Ревью: права здесь выводятся из названия роли, а должны браться из permissions сотрудника из БД (см. комментарий у ROLE_PERMS).
 def can(request: HttpRequest, perm: str) -> bool:
     role = _role_key(request.session.get("role_name"))
     return perm in ROLE_PERMS.get(role, set())
@@ -237,6 +239,7 @@ class HomePageView(View):
             stages = []
 
         def count_draft():
+            # Ревью: в StageDTO нет поля status. Есть status_name, и в нём полное имя из БД — «Черновик (Draft)», а не "draft". getattr тут всегда возвращает "", поэтому счётчики, фильтры и плашки не работают. Сравнивать s.status_name с StatusName.DRAFT и т. д. из warehouse.common.
             return sum(1 for s in stages if getattr(s, "status", "") == "draft")
 
         def count_reserved():
@@ -376,6 +379,7 @@ class ShipmentListPageView(View):
 
         rows = []
         for s in stages:
+            # Ревью: то же, что выше — нужен status_name и сравнение со StatusName.*.
             st = getattr(s, "status", "") or ""
             if status_filter != "all" and st != status_filter:
                 continue
@@ -469,6 +473,7 @@ class ShipmentDetailPageView(View):
             messages.error(request, getattr(exc, "message", str(exc)))
             return redirect("cabinet:shipment_list")
 
+        # Ревью: у ShipmentDTO то же самое — поле status_name, а не status.
         status = getattr(shipment, "status", "") or ""
         planned = getattr(shipment, "planned_date", "") or ""
         if hasattr(planned, "strftime"):
@@ -486,6 +491,7 @@ class ShipmentDetailPageView(View):
         stages_out = []
         raw_stages = getattr(shipment, "stages", None) or []
         for i, stg in enumerate(raw_stages):
+            # Ревью: то же, что выше — нужен status_name и сравнение со StatusName.*.
             st = getattr(stg, "status", "") or ""
             items_raw = getattr(stg, "items", None) or []
             items = []
@@ -554,6 +560,7 @@ class ShipmentDetailPageView(View):
             )
 
         cancellable = all(
+            # Ревью: то же, что выше — нужен status_name и сравнение со StatusName.*.
             (getattr(s, "status", "") in ("draft", "waiting", "reserved")) for s in raw_stages
         ) if raw_stages else False
 
@@ -754,6 +761,7 @@ class ReceiptPageView(View):
 
         incoming = []
         for s in stages:
+            # Ревью: то же, что выше — нужен status_name и сравнение со StatusName.*.
             if getattr(s, "status", "") != "shipped":
                 continue
             # детальные items
