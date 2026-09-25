@@ -1,16 +1,22 @@
 """Готовые сервисы BLL для view. Во view сервис берём только отсюда."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from django.conf import settings
 
 from container import Container
-from warehouse.bll.services.auth_service import LoginService
-from warehouse.bll.services.employee_service import EmployeeService
-from warehouse.bll.services.shipment_service import (
-    RouteQueryService,
-    ShipmentDispatchService,
-    ShipmentDraftService,
-    ShipmentReceiptService,
-)
+
+if TYPE_CHECKING:
+    from warehouse.bll.services.auth_service import LoginService
+    from warehouse.bll.services.employee_service.employee_service import EmployeeService
+    from warehouse.bll.services.shipment_service import (
+        RouteQueryService,
+        ShipmentDispatchService,
+        ShipmentDraftService,
+        ShipmentReceiptService,
+    )
 
 container = Container()
 container.config.from_dict(

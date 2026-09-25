@@ -1,6 +1,6 @@
 from django.urls import path
 
-from web.views import api, auth, detail, draft, home, receipt, shipments
+from .views import api, auth, detail, draft, home, receipt, shipments
 
 urlpatterns = [
     path('login/', auth.login_view, name='login'),
