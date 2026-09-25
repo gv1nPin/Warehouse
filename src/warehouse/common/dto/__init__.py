@@ -3,8 +3,10 @@
 Они не привязаны к сессии, поэтому их можно спокойно передавать в BLL и WEB.
 DTO ссылаются только на другие DTO и никогда на Entities.
 """
-from .operation_history import OperationHistoryDTO
+
 from .employee import EmployeeAuthDTO, EmployeeDTO, NewEmployee, RoleDTO
+from .operation_history import OperationHistoryDTO
+from .warehouse import StockItemDTO, WarehouseDTO
 from .product import ProductDTO
 from .shipment import (
     NewStage,
@@ -15,7 +17,6 @@ from .shipment import (
     StageDTO,
     StageItemDTO,
 )
-from .warehouse import StockItemDTO, WarehouseDTO
 
 __all__ = [
     "EmployeeAuthDTO",

@@ -9,6 +9,7 @@
         <h1>Журнал операций</h1>
         <p class="muted" style="margin:4px 0 0">Аудит действий сотрудников (таблица operation_history)</p>
       </div>
+      <a class="btn btn-primary" href="{% url 'operations_export' %}?employee_id={{ q_employee_id }}&operation_type={{ q_operation_type }}&entity_name={{ q_entity_name }}&entity_id={{ q_entity_id }}&since={{ q_since }}&until={{ q_until }}">Скачать Excel</a>
     </div>
   </div>
 

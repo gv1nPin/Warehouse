@@ -182,3 +182,136 @@ def operation_detail_view(request, operation_id: int):
             }
         },
     )
+
+
+@require_GET
+@employee_required
+def operations_export_view(request):
+    """Выгрузка журнала в Excel (.xlsx). Те же фильтры, что у списка."""
+    if not can(request, PermissionName.EMPLOYEE_MANAGE):
+        messages.error(request, "Недостаточно прав для экспорта журнала")
+        return redirect("home")
+
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Alignment, Font
+    except ImportError:
+        messages.error(
+            request,
+            "Для экспорта в Excel установите openpyxl: pip install openpyxl",
+        )
+        return redirect("operations")
+
+    employee_id = eid(request)
+    q_employee = request.GET.get("employee_id") or ""
+    q_type = (request.GET.get("operation_type") or "").strip()
+    q_entity = (request.GET.get("entity_name") or "").strip()
+    q_entity_id = request.GET.get("entity_id") or ""
+    q_since = request.GET.get("since") or ""
+    q_until = request.GET.get("until") or ""
+
+    actor_employee_id = int(q_employee) if q_employee.isdigit() else None
+    entity_id = int(q_entity_id) if q_entity_id.isdigit() else None
+    since = _parse_dt(q_since)
+    until = _parse_dt(q_until)
+
+    # Экспорт: до 5000 строк (верхний предел репозитория — 500 за раз → пагинация)
+    all_rows = []
+    offset = 0
+    page = 500
+    try:
+        while True:
+            bll_call(
+                "OperationHistoryService.list_operations",
+                request,
+                export=True,
+                limit=page,
+                offset=offset,
+            )
+            batch = history_service().list_operations(
+                employee_id,
+                actor_employee_id=actor_employee_id,
+                operation_type=q_type or None,
+                entity_name=q_entity or None,
+                entity_id=entity_id,
+                since=since,
+                until=until,
+                limit=page,
+                offset=offset,
+            )
+            bll_ok("OperationHistoryService.list_operations", count=len(batch), export=True)
+            all_rows.extend(batch)
+            if len(batch) < page or len(all_rows) >= 5000:
+                break
+            offset += page
+    except BusinessError as exc:
+        bll_err("OperationHistoryService.list_operations", request, exc)
+        messages.error(request, getattr(exc, "message", str(exc)))
+        return redirect("operations")
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Журнал операций"
+
+    headers = [
+        "ID",
+        "Время",
+        "ID сотрудника",
+        "Сотрудник",
+        "Тип операции",
+        "Сущность",
+        "ID сущности",
+        "Детали (JSON)",
+    ]
+    ws.append(headers)
+    header_font = Font(bold=True)
+    for col, _ in enumerate(headers, start=1):
+        cell = ws.cell(1, col)
+        cell.font = header_font
+        cell.alignment = Alignment(vertical="center")
+
+    for op in all_rows:
+        created = op.created_at
+        if hasattr(created, "strftime"):
+            created_s = created.strftime("%d.%m.%Y %H:%M:%S")
+        else:
+            created_s = str(created)
+        details = ""
+        if op.details:
+            try:
+                details = json.dumps(op.details, ensure_ascii=False, default=str)
+            except TypeError:
+                details = str(op.details)
+        ws.append(
+            [
+                op.id,
+                created_s,
+                op.employee_id,
+                op.employee_name,
+                op.operation_type,
+                op.entity_name,
+                op.entity_id if op.entity_id is not None else "",
+                details,
+            ]
+        )
+
+    from openpyxl.utils import get_column_letter
+    from io import BytesIO
+    from django.http import HttpResponse
+
+    widths = [8, 20, 14, 28, 22, 18, 12, 50]
+    for i, w in enumerate(widths, start=1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"operation_history_{stamp}.xlsx"
+    response = HttpResponse(
+        buf.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
