@@ -9,7 +9,8 @@ bcrypt==4.2.1
 # Контейнер зависимостей (IoC)
 dependency-injector==4.45.0
 
-# Веб-слой (API)
+# Веб-слой
+Django==6.1.1
 fastapi==0.115.8
 pydantic==2.10.6
 uvicorn==0.34.0

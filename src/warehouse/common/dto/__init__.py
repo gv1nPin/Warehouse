@@ -4,7 +4,7 @@
 DTO ссылаются только на другие DTO и никогда на Entities.
 """
 
-from .employee import EmployeeAuthDTO, EmployeeDTO
+from .employee import EmployeeAuthDTO, EmployeeDTO, NewEmployee, RoleDTO
 from .product import ProductDTO
 from .shipment import (
     NewStage,
@@ -20,10 +20,12 @@ from .warehouse import StockItemDTO, WarehouseDTO
 __all__ = [
     "EmployeeAuthDTO",
     "EmployeeDTO",
+    "NewEmployee",
     "NewStage",
     "NewStageDocument",
     "NewStageItem",
     "ProductDTO",
+    "RoleDTO",
     "ShipmentDTO",
     "StageDocumentDTO",
     "StageDTO",

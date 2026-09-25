@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """Черновик: создание, товары, водитель, документы, удаление."""
 from __future__ import annotations
 
@@ -126,11 +127,25 @@ def draft_create_view(request):
         bll_err("ShipmentDraftService.create_draft", request, exc)
         messages.error(request, getattr(exc, "message", str(exc)))
         return redirect("draft_new")
+=======
+from django.views.decorators.http import require_http_methods, require_POST
+
+from ..auth import employee_required
+from ._stub import stub_action, stub_page
+
+
+@require_http_methods(['GET', 'POST'])
+@employee_required
+def draft_create_view(request):
+    """Форма создания черновика перевозки."""
+    return stub_page(request, 'Новая перевозка')
+>>>>>>> main
 
 
 @require_POST
 @employee_required
 def add_item_view(request, stage_id: int):
+<<<<<<< HEAD
     if not _require_create(request):
         return redirect("home")
     employee_id = eid(request)
@@ -151,11 +166,16 @@ def add_item_view(request, stage_id: int):
         bll_err("ShipmentDraftService.add_item", request, exc if isinstance(exc, Exception) else Exception(str(exc)))
         messages.error(request, getattr(exc, "message", str(exc)))
     return redirect(request.META.get("HTTP_REFERER") or "shipments")
+=======
+    """Добавляет товар в этап-черновик."""
+    return stub_action(request, 'Добавление товара')
+>>>>>>> main
 
 
 @require_POST
 @employee_required
 def remove_item_view(request, item_id: int):
+<<<<<<< HEAD
     if not _require_create(request):
         return redirect("home")
     employee_id = eid(request)
@@ -168,11 +188,16 @@ def remove_item_view(request, item_id: int):
         bll_err("ShipmentDraftService.remove_item", request, exc)
         messages.error(request, getattr(exc, "message", str(exc)))
     return redirect(request.META.get("HTTP_REFERER") or "shipments")
+=======
+    """Убирает товар из этапа-черновика."""
+    return stub_action(request, 'Удаление товара')
+>>>>>>> main
 
 
 @require_POST
 @employee_required
 def assign_driver_view(request, stage_id: int):
+<<<<<<< HEAD
     if not _require_create(request):
         return redirect("home")
     employee_id = eid(request)
@@ -187,11 +212,16 @@ def assign_driver_view(request, stage_id: int):
         bll_err("ShipmentDraftService.assign_driver", request, exc)
         messages.error(request, getattr(exc, "message", str(exc)))
     return redirect(request.META.get("HTTP_REFERER") or "shipments")
+=======
+    """Назначает или снимает водителя этапа."""
+    return stub_action(request, 'Назначение водителя')
+>>>>>>> main
 
 
 @require_POST
 @employee_required
 def attach_document_view(request, stage_id: int):
+<<<<<<< HEAD
     """Web сохраняет файл → NewStageDocument → draft.attach_document."""
     if not _require_create(request):
         return redirect("home")
@@ -227,11 +257,16 @@ def attach_document_view(request, stage_id: int):
             f"Прикреплено документов: {attached}" if attached > 1 else f"Документ «{files[0].name}» прикреплён",
         )
     return redirect(request.META.get("HTTP_REFERER") or "shipments")
+=======
+    """Прикрепляет документ к этапу-черновику."""
+    return stub_action(request, 'Прикрепление документа')
+>>>>>>> main
 
 
 @require_POST
 @employee_required
 def remove_document_view(request, document_id: int):
+<<<<<<< HEAD
     if not _require_create(request):
         return redirect("home")
     employee_id = eid(request)
@@ -246,11 +281,16 @@ def remove_document_view(request, document_id: int):
         bll_err("ShipmentDraftService.remove_document", request, exc)
         messages.error(request, getattr(exc, "message", str(exc)))
     return redirect(request.META.get("HTTP_REFERER") or "shipments")
+=======
+    """Открепляет документ от этапа-черновика."""
+    return stub_action(request, 'Удаление документа')
+>>>>>>> main
 
 
 @require_POST
 @employee_required
 def delete_draft_view(request, shipment_id: int):
+<<<<<<< HEAD
     if not _require_create(request):
         return redirect("home")
     employee_id = eid(request)
@@ -263,3 +303,7 @@ def delete_draft_view(request, shipment_id: int):
         bll_err("ShipmentDraftService.delete_draft", request, exc)
         messages.error(request, getattr(exc, "message", str(exc)))
     return redirect("shipments")
+=======
+    """Удаляет черновик перевозки целиком."""
+    return stub_action(request, 'Удаление черновика')
+>>>>>>> main

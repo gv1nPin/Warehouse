@@ -1,5 +1,6 @@
 """Готовые сервисы BLL для view. Во view сервис берём только отсюда."""
 
+<<<<<<< HEAD
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -17,6 +18,19 @@ if TYPE_CHECKING:
         ShipmentDraftService,
         ShipmentReceiptService,
     )
+=======
+from django.conf import settings
+
+from container import Container
+from warehouse.bll.services.auth_service import LoginService
+from warehouse.bll.services.employee_service import EmployeeService
+from warehouse.bll.services.shipment_service import (
+    RouteQueryService,
+    ShipmentDispatchService,
+    ShipmentDraftService,
+    ShipmentReceiptService,
+)
+>>>>>>> main
 
 container = Container()
 container.config.from_dict(

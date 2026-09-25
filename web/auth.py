@@ -74,6 +74,7 @@ def api_employee_required(view):
     return wrapper
 
 
+<<<<<<< HEAD
 def can(request, permission) -> bool:
     """Есть ли у вошедшего право из БД (RolePermissions → JWT → request.actor.permissions)."""
     actor = getattr(request, 'actor', None)
@@ -81,3 +82,9 @@ def can(request, permission) -> bool:
         return False
     name = getattr(permission, 'value', permission)
     return name in actor.permissions
+=======
+def can(request, permission: str) -> bool:
+    """Есть ли у вошедшего сотрудника право; нужно, чтобы прятать кнопки."""
+    actor = getattr(request, 'actor', None)
+    return actor is not None and permission in actor.permissions
+>>>>>>> main

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """Карточка перевозки, резерв, отправка, отмена, документ."""
 from __future__ import annotations
 
@@ -13,12 +14,19 @@ from ..auth import can, employee_required
 from ..services import dispatch_service, route_service
 from ..status_ui import status_css, status_label
 from ._helpers import bll_call, bll_err, bll_ok, eid
+=======
+from django.views.decorators.http import require_GET, require_POST
+
+from ..auth import employee_required
+from ._stub import stub_action, stub_page
+>>>>>>> main
 
 
 @require_GET
 @employee_required
 def shipment_detail_view(request, shipment_id: int):
     """Карточка перевозки со всеми этапами."""
+<<<<<<< HEAD
     employee_id = eid(request)
     try:
         bll_call("RouteQueryService.get_shipment_progress", request, shipment_id=shipment_id)
@@ -162,11 +170,15 @@ def shipment_detail_view(request, shipment_id: int):
             "can_delete": can(request, PermissionName.SHIPMENT_CREATE) and status == StatusName.DRAFT,
         },
     )
+=======
+    return stub_page(request, f'Перевозка №{shipment_id}')
+>>>>>>> main
 
 
 @require_POST
 @employee_required
 def reserve_view(request, stage_id: int):
+<<<<<<< HEAD
     employee_id = eid(request)
     try:
         bll_call("ShipmentDispatchService.reserve_stage", request, stage_id=stage_id)
@@ -177,11 +189,16 @@ def reserve_view(request, stage_id: int):
         bll_err("ShipmentDispatchService.reserve_stage", request, exc)
         messages.error(request, getattr(exc, "message", str(exc)))
     return redirect(request.META.get("HTTP_REFERER") or "shipments")
+=======
+    """Резервирует товар этапа на складе отправления."""
+    return stub_action(request, 'Резерв этапа')
+>>>>>>> main
 
 
 @require_POST
 @employee_required
 def ship_view(request, stage_id: int):
+<<<<<<< HEAD
     employee_id = eid(request)
     try:
         bll_call("ShipmentDispatchService.ship_stage", request, stage_id=stage_id)
@@ -192,11 +209,16 @@ def ship_view(request, stage_id: int):
         bll_err("ShipmentDispatchService.ship_stage", request, exc)
         messages.error(request, getattr(exc, "message", str(exc)))
     return redirect(request.META.get("HTTP_REFERER") or "shipments")
+=======
+    """Отправляет этап со склада."""
+    return stub_action(request, 'Отправка этапа')
+>>>>>>> main
 
 
 @require_POST
 @employee_required
 def cancel_view(request, shipment_id: int):
+<<<<<<< HEAD
     employee_id = eid(request)
     try:
         bll_call("ShipmentDispatchService.cancel_shipment", request, shipment_id=shipment_id)
@@ -207,11 +229,16 @@ def cancel_view(request, shipment_id: int):
         bll_err("ShipmentDispatchService.cancel_shipment", request, exc)
         messages.error(request, getattr(exc, "message", str(exc)))
     return redirect("shipment_detail", shipment_id=shipment_id)
+=======
+    """Отменяет перевозку до отправки."""
+    return stub_action(request, 'Отмена перевозки')
+>>>>>>> main
 
 
 @require_GET
 @employee_required
 def document_open_view(request, stage_id: int, document_id: int):
+<<<<<<< HEAD
     """Отдаёт файл документа этапа с диска MEDIA."""
     from django.core.files.storage import default_storage
 
@@ -229,3 +256,7 @@ def document_open_view(request, stage_id: int, document_id: int):
     if not path or not default_storage.exists(path):
         raise Http404
     return FileResponse(default_storage.open(path, "rb"), filename=getattr(doc, "file_name", "file"))
+=======
+    """Отдаёт файл документа этапа."""
+    return stub_page(request, 'Документ')
+>>>>>>> main

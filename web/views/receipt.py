@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """Приёмка: входящие этапы, факт, accept."""
 from __future__ import annotations
 
@@ -14,11 +15,18 @@ from ..auth import can, employee_required
 from ..services import receipt_service
 from ..status_ui import status_label
 from ._helpers import bll_call, bll_err, bll_ok, eid
+=======
+from django.views.decorators.http import require_GET, require_POST
+
+from ..auth import employee_required
+from ._stub import stub_action, stub_page
+>>>>>>> main
 
 
 @require_GET
 @employee_required
 def receipt_list_view(request):
+<<<<<<< HEAD
     if not can(request, PermissionName.SHIPMENT_ACCEPT):
         messages.error(request, "Недостаточно прав для приёмки")
         return redirect("home")
@@ -67,11 +75,16 @@ def receipt_list_view(request):
         )
 
     return render(request, "web/pages/receipt.html", {"incoming": incoming})
+=======
+    """Входящие этапы для приёмки."""
+    return stub_page(request, 'Приёмка')
+>>>>>>> main
 
 
 @require_POST
 @employee_required
 def save_facts_view(request, stage_id: int):
+<<<<<<< HEAD
     """enter_actual_quantity по всем fact_<item_id>."""
     if not can(request, PermissionName.SHIPMENT_ACCEPT):
         messages.error(request, "Недостаточно прав")
@@ -108,11 +121,16 @@ def save_facts_view(request, stage_id: int):
         )
         messages.error(request, getattr(exc, "message", str(exc)))
     return redirect("receipt")
+=======
+    """Сохраняет фактические количества этапа."""
+    return stub_action(request, 'Ввод факта')
+>>>>>>> main
 
 
 @require_POST
 @employee_required
 def accept_view(request, stage_id: int):
+<<<<<<< HEAD
     """Сначала факты (если пришли в POST), затем accept_stage."""
     if not can(request, PermissionName.SHIPMENT_ACCEPT):
         messages.error(request, "Недостаточно прав")
@@ -144,3 +162,7 @@ def accept_view(request, stage_id: int):
         )
         messages.error(request, getattr(exc, "message", str(exc)))
     return redirect("receipt")
+=======
+    """Принимает этап на складе назначения."""
+    return stub_action(request, 'Приёмка этапа')
+>>>>>>> main

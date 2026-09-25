@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """Главная и остатки."""
 from __future__ import annotations
 
@@ -15,11 +16,18 @@ from ..auth import employee_required
 from ..services import draft_service, route_service
 from ..status_ui import status_css
 from ._helpers import bll_call, bll_err, bll_ok, eid, has_perm, home_layout
+=======
+from django.views.decorators.http import require_GET
+
+from ..auth import employee_required
+from ._stub import stub_page
+>>>>>>> main
 
 
 @require_GET
 @employee_required
 def home_view(request):
+<<<<<<< HEAD
     """Главная: счётчики и плитки по permissions из БД."""
     layout = home_layout(request)
     employee_id = eid(request)
@@ -137,11 +145,16 @@ def home_view(request):
             "extra_tiles": [tile_meta[k] for k in layout["extra"] if k in tile_meta],
         },
     )
+=======
+    """Главная: счётчики и плитки разделов."""
+    return stub_page(request, 'Главная')
+>>>>>>> main
 
 
 @require_GET
 @employee_required
 def stock_view(request):
+<<<<<<< HEAD
     """Остатки склада сотрудника (list_available_stock)."""
     q = (request.GET.get("q") or "").strip().lower()
     employee_id = eid(request)
@@ -184,3 +197,7 @@ def stock_view(request):
             "can_manage": has_perm(request, PermissionName.EMPLOYEE_MANAGE),
         },
     )
+=======
+    """Остатки склада сотрудника."""
+    return stub_page(request, 'Остатки')
+>>>>>>> main

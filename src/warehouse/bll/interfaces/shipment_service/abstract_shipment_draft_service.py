@@ -107,5 +107,5 @@ class AbstractShipmentDraftService(ABC):
         """
 
     @abstractmethod
-    def remove_document(self, employee_id: int, document_id: int) -> None:
-        """Открепляет документ от этапа-черновика. Файл на диске удаляет web-слой."""
+    def remove_document(self, employee_id: int, document_id: int) -> StageDocumentDTO:
+        """Открепляет документ от этапа-черновика и возвращает его. Файл на диске удаляет web-слой."""
