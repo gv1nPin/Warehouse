@@ -145,10 +145,11 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
                 stage_status_id=self._status_id(uow, StatusName.WAITING),
                 first_stage_status_id=draft_id,
             )
-            # вместо обращения по shipment.stages[0] извлекаем строго по бизнес-логике
             first_stage = uow.stages.get_by_order(shipment_id, stage_order=1)
             if first_stage is None:
                 raise NotFoundError(f"Стартовый этап перевозки №{shipment_id} не инициализирован")
+            for document in documents:
+                uow.stage_documents.add(first_stage.id, actor.employee.id, document)
 
             logging.info(
                 "Сотрудник №%s создал черновик перевозки №%s по маршруту %s, документов: %s",
@@ -243,7 +244,7 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
             )
             return uow.stage_documents.get_by_id(document_id)
 
-    def remove_document(self, employee_id: int, document_id: int) -> None:
+    def remove_document(self, employee_id: int, document_id: int) -> StageDocumentDTO:
         with self._uow_factory() as uow:
             actor = self._sender(uow, employee_id)
 
@@ -253,6 +254,7 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
 
             self._editable_stage(uow, actor, document.stage_id)
             uow.stage_documents.delete(document_id)
+            return document
 
     # ---------- Утилиты ----------
 

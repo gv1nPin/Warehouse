@@ -1,0 +1,77 @@
+{% extends "web/base.html" %}
+{% block title %}{{ page_title }} · Warehouse{% endblock %}
+{% block content %}
+<main class="screen">
+  <div>
+    <a class="back" href="{% url 'home' %}">← Главная</a>
+    <div class="head">
+      <div>
+        <h1>{{ page_title }}</h1>
+        <p class="muted" style="margin:4px 0 0">{{ page_sub }}</p>
+      </div>
+      {% if can_create %}
+      <a class="btn btn-primary" href="{% url 'draft_new' %}">Создать перевозку</a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if not trips_only %}
+  <div class="list-tools">
+    <form method="get" class="search" action="">
+      <div class="search-box">
+        <input id="search-input" name="q" type="text" value="{{ q }}"
+          placeholder="Номер, статус, водитель или кто создал" aria-label="Поиск перевозок">
+        <button class="btn btn-sm" type="submit">Найти</button>
+      </div>
+    </form>
+    <div class="chips" role="group" aria-label="Статус">
+      {% for key, label in status_filters %}
+      <a class="chip" href="?status={{ key }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}"
+         aria-pressed="{% if status_filter == key %}true{% else %}false{% endif %}">{{ label }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="panel" style="padding:8px">
+    <div class="list-count muted">
+      {% if not trips_only %}
+        {% if q or status_filter != 'all' %}Найдено: {{ rows|length }}{% else %}Всего: {{ rows|length }}{% endif %}
+      {% endif %}
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Перевозка</th>
+            <th>Этап</th>
+            <th>Откуда → куда</th>
+            <th>Плановая дата</th>
+            <th>Водитель</th>
+            <th>Создал</th>
+            <th>Статус</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for x in rows %}
+          <tr class="row-click">
+            <td><a class="linkish" href="{% url 'shipment_detail' x.shipment_id %}">№{{ x.shipment_id }}</a></td>
+            <td class="num">{{ x.stage_index }} из {{ x.stages_total }}</td>
+            <td>
+              {{ x.from_name }} → {{ x.to_name }}
+              {% if x.dir == 'in' %}<span class="muted">· входящая</span>{% endif %}
+            </td>
+            <td class="num">{{ x.planned_date }}</td>
+            <td>{% if x.driver %}{{ x.driver }}{% else %}<span class="muted">не назначен</span>{% endif %}</td>
+            <td>{{ x.creator }}</td>
+            <td><span class="pill st-{{ x.stage_status }}">{{ x.stage_status_label }}</span></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="empty">Ничего не найдено.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+{% endblock %}

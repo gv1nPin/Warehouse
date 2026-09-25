@@ -41,10 +41,10 @@ def business_errors_as_messages(view):
 
 
 def redirect_back(request, fallback: str = 'home'):
-    """Редирект на страницу, с которой пришёл запрос, или на fallback."""
-    referer = request.META.get('HTTP_REFERER')
-    if referer and url_has_allowed_host_and_scheme(
-        referer, allowed_hosts={request.get_host()}, require_https=request.is_secure()
-    ):
-        return redirect(referer)
+    """Редирект на поле next формы, иначе на страницу, откуда пришли, иначе на fallback."""
+    for url in (request.POST.get('next'), request.META.get('HTTP_REFERER')):
+        if url and url_has_allowed_host_and_scheme(
+            url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+        ):
+            return redirect(url)
     return redirect(fallback)
