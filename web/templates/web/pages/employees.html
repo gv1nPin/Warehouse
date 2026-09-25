@@ -1,15 +1,15 @@
-{% extends "base.html" %}
+{% extends 'web/base.html' %}
 {% block title %}Сотрудники · Warehouse{% endblock %}
 {% block content %}
 <main class="screen">
   <div>
-    <a class="back" href="{% url 'cabinet:home' %}">← Главная</a>
+    <a class="back" href="{% url 'home' %}">← Главная</a>
     <div class="head">
       <div>
         <h1>Сотрудники</h1>
         <p class="muted" style="margin:4px 0 0">Регистрация и блокировка. Заблокированный сотрудник не может войти.</p>
       </div>
-      <a class="btn btn-primary" href="{% url 'cabinet:employee_register' %}">Зарегистрировать</a>
+      <a class="btn btn-primary" href="{% url 'employee_new' %}">Зарегистрировать</a>
     </div>
   </div>
   <div class="panel" style="padding:8px">
@@ -33,7 +33,7 @@
               {% endif %}
             </td>
             <td class="r">
-              <form method="post" action="{% url 'cabinet:employee_toggle' e.id %}" style="display:inline">
+              <form method="post" action="{% url 'employee_new' e.id %}" style="display:inline">
                 {% csrf_token %}
                 <button class="btn btn-sm" type="submit">
                   {% if e.active %}Заблокировать{% else %}Разблокировать{% endif %}

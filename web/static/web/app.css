@@ -1,3 +1,8 @@
+html{color-scheme:light}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+
 :root{
   --bg:#D9E9F6; --surface:#FFFFFF; --surface-2:#F2F7FB; --ink:#0F2436; --muted:#587086;
   --line:#D3E2EE; --accent:#1B5FA0; --accent-hover:#154C82; --on-accent:#FFFFFF;

@@ -1,9 +1,9 @@
-{% extends "base.html" %}
+{% extends 'web/base.html' %}
 {% block title %}Перевозка №{{ shipment.id }} · Warehouse{% endblock %}
 {% block content %}
 <main class="screen">
   <div>
-    <a class="back" href="{% url 'cabinet:shipment_list' %}">← Перевозки</a>
+    <a class="back" href="{% url 'shipments' %}">← Перевозки</a>
     <div class="head">
       <div>
         <h1>Перевозка №{{ shipment.id }}</h1>
@@ -75,7 +75,7 @@
         <div class="docs-head">
           <h3>Документы <span class="muted num">· {{ stage.docs|length }}</span></h3>
           {% if stage.can_attach %}
-          <form method="post" action="{% url 'cabinet:stage_attach_doc' stage.id %}" enctype="multipart/form-data" style="display:inline">
+          <form method="post" action="{% url 'draft_attach' stage.id %}" enctype="multipart/form-data" style="display:inline">
             {% csrf_token %}
             <label class="btn btn-sm" for="attach-{{ stage.id }}">Прикрепить документ</label>
             <input type="file" id="attach-{{ stage.id }}" name="document" multiple hidden onchange="this.form.submit()">
@@ -88,7 +88,7 @@
           <span class="name">{{ d.name }}</span>
           <span class="by">{{ d.size }} · {{ d.by }} · {{ d.at }}</span>
           {% if stage.can_attach and d.id %}
-          <form method="post" action="{% url 'cabinet:stage_remove_doc' d.id %}" style="display:inline">
+          <form method="post" action="{% url 'draft_detach' d.id %}" style="display:inline">
             {% csrf_token %}
             <input type="hidden" name="storage_path" value="{{ d.storage_path }}">
             <button class="icon-btn" type="submit" aria-label="Открепить {{ d.name }}">✕</button>
@@ -107,18 +107,18 @@
 
       <div class="actions">
         {% if stage.can_reserve %}
-        <form method="post" action="{% url 'cabinet:stage_reserve' stage.id %}">{% csrf_token %}
+        <form method="post" action="{% url 'stage_reserve' stage.id %}">{% csrf_token %}
           <button class="btn btn-primary btn-sm" type="submit"{% if not stage.has_docs %} disabled{% endif %}>Зарезервировать</button>
         </form>
         {% if not stage.has_docs %}<span class="hint-inline">Сначала прикрепите документ</span>{% endif %}
         {% endif %}
         {% if stage.can_ship %}
-        <form method="post" action="{% url 'cabinet:stage_ship' stage.id %}">{% csrf_token %}
+        <form method="post" action="{% url 'stage_ship' stage.id %}">{% csrf_token %}
           <button class="btn btn-primary btn-sm" type="submit">Отправить</button>
         </form>
         {% endif %}
         {% if stage.can_go_receipt %}
-        <a class="btn btn-primary btn-sm" href="{% url 'cabinet:receipt' %}?stage={{ stage.id }}">Перейти к приёмке</a>
+        <a class="btn btn-primary btn-sm" href="{% url 'receipt' %}?stage={{ stage.id }}">Перейти к приёмке</a>
         {% endif %}
       </div>
 
@@ -135,14 +135,14 @@
   {% if can_cancel or can_delete %}
   <div class="actions">
     {% if can_cancel %}
-    <form method="post" action="{% url 'cabinet:shipment_cancel' shipment.id %}"
+    <form method="post" action="{% url 'shipment_cancel' shipment.id %}"
           onsubmit="return confirm('Отменить перевозку №{{ shipment.id }}?');">
       {% csrf_token %}
       <button class="btn btn-danger" type="submit">Отменить перевозку</button>
     </form>
     {% endif %}
     {% if can_delete %}
-    <form method="post" action="{% url 'cabinet:shipment_delete' shipment.id %}"
+    <form method="post" action="{% url 'draft_delete' shipment.id %}"
           onsubmit="return confirm('Удалить черновик №{{ shipment.id }}?');">
       {% csrf_token %}
       <button class="btn btn-danger" type="submit">Удалить черновик</button>

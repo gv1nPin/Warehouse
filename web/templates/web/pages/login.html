@@ -1,8 +1,8 @@
-{% extends "base.html" %}
+{% extends 'web/base.html' %}
 {% block title %}Вход · Warehouse{% endblock %}
 {% block content %}
 <section class="login">
-  <form class="panel" method="post" action="{% url 'cabinet:login' %}">
+  <form class="panel" method="post" action="{% url 'login' %}">
     {% csrf_token %}
     <div>
       <div class="brand" style="margin-bottom:14px"><span class="mark">W</span>Warehouse</div>

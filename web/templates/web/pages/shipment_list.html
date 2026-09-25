@@ -1,16 +1,16 @@
-{% extends "base.html" %}
+{% extends 'web/base.html' %}
 {% block title %}{{ page_title }} · Warehouse{% endblock %}
 {% block content %}
 <main class="screen">
   <div>
-    <a class="back" href="{% url 'cabinet:home' %}">← Главная</a>
+    <a class="back" href="{% url 'home' %}">← Главная</a>
     <div class="head">
       <div>
         <h1>{{ page_title }}</h1>
         <p class="muted" style="margin:4px 0 0">{{ page_sub }}</p>
       </div>
       {% if can_create %}
-      <a class="btn btn-primary" href="{% url 'cabinet:shipment_create' %}">Создать перевозку</a>
+      <a class="btn btn-primary" href="{% url 'draft_new' %}">Создать перевозку</a>
       {% endif %}
     </div>
   </div>
@@ -55,7 +55,7 @@
         <tbody>
           {% for x in rows %}
           <tr class="row-click">
-            <td><a class="linkish" href="{% url 'cabinet:shipment_detail' x.shipment_id %}">№{{ x.shipment_id }}</a></td>
+            <td><a class="linkish" href="{% url 'shipment_detail' x.shipment_id %}">№{{ x.shipment_id }}</a></td>
             <td class="num">{{ x.stage_index }} из {{ x.stages_total }}</td>
             <td>
               {{ x.from_name }} → {{ x.to_name }}

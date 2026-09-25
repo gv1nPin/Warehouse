@@ -1,9 +1,9 @@
-{% extends "base.html" %}
+{% extends 'web/base.html' %}
 {% block title %}{{ page_title }} · Warehouse{% endblock %}
 {% block content %}
 <main class="screen">
   <div>
-    <a class="back" href="{% url 'cabinet:home' %}">← Главная</a>
+    <a class="back" href="{% url 'home' %}">← Главная</a>
     <h1>{{ page_title }}</h1>
   </div>
   <div class="panel">

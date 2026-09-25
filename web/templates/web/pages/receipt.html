@@ -1,9 +1,9 @@
-{% extends "base.html" %}
+{% extends 'web/base.html' %}
 {% block title %}Приёмка · Warehouse{% endblock %}
 {% block content %}
 <main class="screen">
   <div>
-    <a class="back" href="{% url 'cabinet:home' %}">← Главная</a>
+    <a class="back" href="{% url 'home' %}">← Главная</a>
     <h1>Приёмка</h1>
     <p class="muted" style="margin:4px 0 0">Этапы в статусе «Отправлено», которые едут на ваш склад.</p>
   </div>
@@ -22,7 +22,7 @@
       {% if stage.shipped_at %}<div><span class="muted">Отправлен: </span><span class="num">{{ stage.shipped_at }}</span></div>{% endif %}
     </div>
 
-    <form method="post" action="{% url 'cabinet:stage_accept' stage.id %}">
+    <form method="post" action="{% url 'receipt_accept' stage.id %}">
       {% csrf_token %}
       <div class="table-wrap">
         <table>

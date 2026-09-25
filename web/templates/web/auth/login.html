@@ -1,0 +1,29 @@
+{% extends 'web/base.html' %}
+
+{% block title %}Вход{% endblock %}
+{% block appbar %}{% endblock %}
+
+{% block content %}
+<section class="login">
+  <form class="panel" method="post" action="{% url 'login' %}">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    <div>
+      <div class="brand" style="margin-bottom:14px"><span class="mark">W</span>Warehouse</div>
+      <h1>Вход</h1>
+      <p class="muted" style="margin:4px 0 0">Кабинет сотрудника склада</p>
+    </div>
+    {% if error %}<p class="error" role="alert" style="margin:0">{{ error }}</p>{% endif %}
+    <div class="field">
+      <label for="login">Логин</label>
+      <input class="input" id="login" name="login" value="{{ login }}" autocomplete="username" required autofocus>
+    </div>
+    <div class="field">
+      <label for="password">Пароль</label>
+      <input class="input" id="password" name="password" type="password" autocomplete="current-password" required>
+    </div>
+    <button class="btn btn-primary" type="submit">Войти</button>
+    <p class="muted" style="margin:0;font-size:13px">Учётную запись создаёт администратор системы.</p>
+  </form>
+</section>
+{% endblock %}

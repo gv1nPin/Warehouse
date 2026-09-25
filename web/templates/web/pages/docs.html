@@ -1,14 +1,14 @@
-{% extends "base.html" %}
+{% extends 'web/base.html' %}
 {% block title %}Документы · Warehouse{% endblock %}
 {% block content %}
 <main class="screen">
   <div>
-    <a class="back" href="{% url 'cabinet:home' %}">← Главная</a>
+    <a class="back" href="{% url 'home' %}">← Главная</a>
     <h1>Документы</h1>
     <p class="muted" style="margin:4px 0 0">Накладные, акты и фото, прикреплённые к этапам перевозок.</p>
   </div>
 
-  <form class="drop panel" method="post" action="{% url 'cabinet:docs' %}" enctype="multipart/form-data">
+  <form class="drop panel" method="post" action="{% url 'shipments' %}" enctype="multipart/form-data">
     {% csrf_token %}
     <b>Прикрепить файл к этапу</b>
     <span class="muted">Укажите ID этапа и файл (PDF/JPG).</span>
@@ -31,7 +31,7 @@
           <tr>
             <td><span class="art">{{ d.ext }}</span> {{ d.name }}</td>
             <td>
-              <a class="linkish" href="{% url 'cabinet:shipment_detail' d.shipment_id %}">№{{ d.shipment_id }}</a>
+              <a class="linkish" href="{% url 'shipment_detail' d.shipment_id %}">№{{ d.shipment_id }}</a>
               <span class="muted">· этап {{ d.stage_index }}</span>
             </td>
             <td>{{ d.by }}</td>

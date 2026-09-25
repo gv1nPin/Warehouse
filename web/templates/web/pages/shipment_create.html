@@ -1,14 +1,14 @@
-{% extends "base.html" %}
+{% extends 'web/base.html' %}
 {% block title %}Новая перевозка · Warehouse{% endblock %}
 {% block content %}
 <main class="screen">
   <div>
-    <a class="back" href="{% url 'cabinet:home' %}">← Главная</a>
+    <a class="back" href="{% url 'home' %}">← Главная</a>
     <h1>Новая перевозка</h1>
     <p class="muted" style="margin:4px 0 0">Создаётся черновиком. Товар резервируется отдельно, на странице перевозки.</p>
   </div>
 
-  <form class="form" method="post" action="{% url 'cabinet:shipment_create' %}" enctype="multipart/form-data" novalidate>
+  <form class="form" method="post" action="{% url 'draft_new' %}" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
     <div class="form-main">
       <div class="panel section">
