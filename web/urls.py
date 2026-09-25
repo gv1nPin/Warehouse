@@ -6,7 +6,7 @@ API (JSON) — для автотестов / будущих клиентов.
 """
 from django.urls import path
 
-from . import views_pages as views
+from . import views
 
 app_name = "cabinet"
 
