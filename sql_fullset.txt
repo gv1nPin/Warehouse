@@ -218,22 +218,62 @@ INSERT INTO public."Warehouses" (id, title, address) VALUES
     (3, 'Региональный Склад Запад',                  'г. Смоленск, ул. Индустриальная, д. 24')
 ON CONFLICT (id) DO NOTHING;
 
--- Логин: ivan_sklad, пароль: Sklad2026
+-- Демо-сотрудники. Кладовщиков регистрирует администратор через сайт.
+--   Логин           Пароль        Роль                     Склад
+--   admin           Admin2026     Администратор системы    ЦРС (1)
+--   ivan_sklad      Sklad2026     Старший кладовщик        ЦРС (1)
+--   driver_petrov   Driver2026    Водитель                 ЦРС (1)
+--   manager_orlova  Manager2026   Менеджер                 ЦРС (1)
+-- DO UPDATE: повторный запуск чинит хэши в уже развёрнутых базах.
 INSERT INTO public."Employees" (id, first_name, last_name, warehouse_id, role_id, login, password_hash) VALUES
-    (1, 'Иван', 'Иванов', 1, 1, 'ivan_sklad',
-     '$2b$12$N9qo7YFi9E.A8J67N9z4O.vA8yU/AegjPjS7W3eB68yP3VOnI0E3G')
-ON CONFLICT (id) DO NOTHING;
+    (1, 'Иван',   'Иванов',   1, 1, 'ivan_sklad',
+     '$2b$12$lcOCh6XW1e2gADHR6ZD3kub1hq/Be804sORETsMn0Wgw6t6bi9Fwm'),
+    (2, 'Анна',   'Смирнова', 1, 3, 'admin',
+     '$2b$12$mWP178iiLaFKr/JePcmvuu7HNzg1rMG2fxTT8nMUPI7FMSdLlynTy'),
+    (3, 'Сергей', 'Петров',   1, 6, 'driver_petrov',
+     '$2b$12$3fDAuS45KWgjmu6PLuCwR.A.blN/W.sB7cHBB3v/MaBbYeyPuPEKS'),
+    (4, 'Мария',  'Орлова',   1, 5, 'manager_orlova',
+     '$2b$12$gwKEVim/82rgMePPGr8YdOlPBGGDfQYfb3kJL2BpBRtw3vvA3ZJwy')
+ON CONFLICT (id) DO UPDATE SET
+    first_name    = EXCLUDED.first_name,
+    last_name     = EXCLUDED.last_name,
+    warehouse_id  = EXCLUDED.warehouse_id,
+    role_id       = EXCLUDED.role_id,
+    login         = EXCLUDED.login,
+    password_hash = EXCLUDED.password_hash,
+    is_deleted    = false;
 
 INSERT INTO public."Products" (id, article_number, product_name, measurement_id) VALUES
-    (1, 'ART-001', 'Медный силовой кабель (весовой)', 2),
-    (2, 'ART-002', 'Трансформаторное масло T-1500',   3),
-    (3, 'ART-003', 'Крепежный комплект М12',          1)
+    (1,  'ART-001', 'Медный силовой кабель (весовой)',   2),
+    (2,  'ART-002', 'Трансформаторное масло T-1500',     3),
+    (3,  'ART-003', 'Крепежный комплект М12',            1),
+    (4,  'ART-004', 'Автоматический выключатель 25А',    1),
+    (5,  'ART-005', 'Кабель ВВГнг 3х2.5 (бухта 100 м)',  1),
+    (6,  'ART-006', 'Изоляционная лента ПВХ 19 мм',      1),
+    (7,  'ART-007', 'Арматура А500С 12 мм',              4),
+    (8,  'ART-008', 'Сухая бетонная смесь М300',         2),
+    (9,  'ART-009', 'Антифриз технический G11',          3),
+    (10, 'ART-010', 'Паллета деревянная 1200х800',       1)
 ON CONFLICT (id) DO NOTHING;
 
+-- Основной запас на ЦРС (1), немного на транзитном узле (2) и региональном складе (3).
 INSERT INTO public."StockOnWarehouse" (warehouse_id, product_id, quantity, reserved_quantity) VALUES
-    (1, 1, 5500.750, 0),
-    (1, 2, 1200.000, 0),
-    (1, 3,  450.000, 0)
+    (1, 1,  5500.750, 0),
+    (1, 2,  1200.000, 0),
+    (1, 3,   450.000, 0),
+    (1, 4,   320.000, 0),
+    (1, 5,    85.000, 0),
+    (1, 6,  1500.000, 0),
+    (1, 7,    42.500, 0),
+    (1, 8, 18000.000, 0),
+    (1, 9,   640.000, 0),
+    (1, 10,  200.000, 0),
+    (2, 3,   120.000, 0),
+    (2, 6,   300.000, 0),
+    (2, 10,   60.000, 0),
+    (3, 1,   800.250, 0),
+    (3, 4,    40.000, 0),
+    (3, 8,  2500.000, 0)
 ON CONFLICT (warehouse_id, product_id) DO NOTHING;
 
 -- =========================================================
