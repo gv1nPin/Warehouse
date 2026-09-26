@@ -1,231 +1,139 @@
-"""Карточка перевозки, резерв, отправка, отмена, документ."""
-from __future__ import annotations
+import logging
 
 from django.contrib import messages
 from django.http import FileResponse, Http404
-from django.shortcuts import redirect, render
+from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_POST
 
 from warehouse.common import PermissionName, StatusName
-from warehouse.common.exceptions import BusinessError
+from warehouse.common.dto import StageDocumentDTO, StageDTO
 
-from ..auth import can, employee_required
+from ..auth import employee_required
+from ..controller_logging import logged
+from ..errors import business_errors_as_http, business_errors_as_messages, redirect_back
 from ..services import dispatch_service, route_service
-from ..status_ui import status_css, status_label
-from ._helpers import bll_call, bll_err, bll_ok, eid
+from ..uploads import open_stage_file
+from .draft import draft_panel_context
+
+CANCELLABLE = (StatusName.DRAFT, StatusName.WAITING, StatusName.RESERVED)
 
 
-@require_GET
-@employee_required
-def shipment_detail_view(request, shipment_id: int):
-    """Карточка перевозки со всеми этапами."""
-    employee_id = eid(request)
-    try:
-        bll_call("RouteQueryService.get_shipment_progress", request, shipment_id=shipment_id)
-        shipment = route_service().get_shipment_progress(employee_id, shipment_id)
-        bll_ok("RouteQueryService.get_shipment_progress", shipment)
-    except BusinessError as exc:
-        bll_err("RouteQueryService.get_shipment_progress", request, exc)
-        messages.error(request, getattr(exc, "message", str(exc)))
-        return redirect("shipments")
-
-    status = getattr(shipment, "status_name", "") or ""
-    planned = getattr(shipment, "planned_date", "") or ""
-    if hasattr(planned, "strftime"):
-        planned = planned.strftime("%d.%m.%Y")
-
-    raw_stages = getattr(shipment, "stages", None) or ()
-    route_nodes = []
-    our_wh = getattr(request.actor, "warehouse_id", None)
-    seen = []
-    for stg in raw_stages:
-        for wh in (getattr(stg, "from_warehouse", None), getattr(stg, "to_warehouse", None)):
-            if wh is None:
-                continue
-            wid = getattr(wh, "id", None)
-            if wid in seen:
-                continue
-            seen.append(wid)
-            route_nodes.append(
-                {
-                    "title": getattr(wh, "title", ""),
-                    "city": getattr(wh, "address", "") or "",
-                    "mine": our_wh is not None and wid == our_wh,
-                }
-            )
-
-    stages_out = []
-    for i, stg in enumerate(raw_stages):
-        st = getattr(stg, "status_name", "") or ""
-        items = []
-        has_comments = False
-        for it in getattr(stg, "items", None) or ():
-            qty_doc = getattr(it, "document_quantity", None)
-            qty_fact = getattr(it, "actual_quantity", None)
-            comment = getattr(it, "comment", None) or ""
-            if comment:
-                has_comments = True
-            items.append(
-                {
-                    "id": getattr(it, "id", None),
-                    "product_id": getattr(it, "product_id", None),
-                    "article": getattr(it, "article_number", "") or "",
-                    "name": getattr(it, "product_name", "") or "",
-                    "unit": getattr(it, "measurement_name", "") or "",
-                    "qty_doc": qty_doc,
-                    "qty_fact": qty_fact,
-                    "comment": comment,
-                    "diff": qty_fact is not None and qty_doc is not None and qty_fact != qty_doc,
-                }
-            )
-
-        docs = []
-        # документы подгружаются отдельно при необходимости; в progress могут отсутствовать
-        stage_id = getattr(stg, "id", None)
-        if stage_id:
-            try:
-                for d in route_service().list_documents(employee_id, stage_id):
-                    name = getattr(d, "file_name", "file")
-                    ext = (name.rsplit(".", 1)[-1] if "." in name else "").upper()[:4]
-                    size_b = getattr(d, "size_bytes", None)
-                    size_label = ""
-                    if size_b is not None:
-                        size_label = (
-                            f"{max(1, round(size_b / 1024))} КБ"
-                            if size_b < 1048576
-                            else f"{size_b / 1048576:.1f} МБ".replace(".", ",")
-                        )
-                    docs.append(
-                        {
-                            "id": getattr(d, "id", None),
-                            "name": name,
-                            "ext": ext,
-                            "size": size_label,
-                            "by": getattr(d, "uploaded_by_name", "") or "",
-                            "at": getattr(d, "uploaded_at", "") or "",
-                            "storage_path": getattr(d, "storage_path", "") or "",
-                        }
-                    )
-            except BusinessError:
-                pass
-
-        from_wh = getattr(stg, "from_warehouse", None)
-        to_wh = getattr(stg, "to_warehouse", None)
-        stages_out.append(
-            {
-                "id": stage_id,
-                "index": getattr(stg, "stage_order", i + 1),
-                "from_name": getattr(from_wh, "title", "") if from_wh else "",
-                "to_name": getattr(to_wh, "title", "") if to_wh else "",
-                "status": status_css(st),
-                "status_name": st,
-                "status_label": status_label(st),
-                "driver": getattr(stg, "driver_name", None),
-                "shipped_at": getattr(stg, "sent_at", None),
-                "items": items,
-                "show_fact": st in (StatusName.RECEIVED, StatusName.DISCREPANCY),
-                "has_comments": has_comments,
-                "docs": docs,
-                "has_docs": bool(docs),
-                "can_attach": can(request, PermissionName.SHIPMENT_CREATE)
-                and st == StatusName.DRAFT
-                and i == 0,
-                "can_reserve": can(request, PermissionName.SHIPMENT_DISPATCH)
-                and st == StatusName.DRAFT
-                and i == 0,
-                "can_ship": can(request, PermissionName.SHIPMENT_DISPATCH) and st == StatusName.RESERVED,
-                "can_go_receipt": can(request, PermissionName.SHIPMENT_ACCEPT)
-                and st == StatusName.SHIPPED,
-            }
-        )
-
-    cancellable = all(
-        getattr(s, "status_name", "")
-        in (StatusName.DRAFT, StatusName.WAITING, StatusName.RESERVED)
-        for s in raw_stages
-    ) if raw_stages else False
-
-    return render(
-        request,
-        "web/pages/shipment_detail.html",
-        {
-            "shipment": {
-                "id": shipment_id,
-                "status": status_css(status),
-                "status_label": status_label(status),
-                "planned_date": planned,
-                "creator": getattr(shipment, "creator_name", "") or "",
-            },
-            "route_nodes": route_nodes,
-            "stages": stages_out,
-            "can_cancel": can(request, PermissionName.SHIPMENT_CANCEL) and cancellable,
-            "can_delete": can(request, PermissionName.SHIPMENT_CREATE) and status == StatusName.DRAFT,
-        },
+def _is_mine(request, stage: StageDTO) -> bool:
+    """Этап уходит со склада сотрудника, либо сотрудник — администратор."""
+    return (
+        stage.from_warehouse.id == request.actor.warehouse_id
+        or PermissionName.EMPLOYEE_MANAGE in request.actor.permissions
     )
 
 
-@require_POST
-@employee_required
-def reserve_view(request, stage_id: int):
-    employee_id = eid(request)
-    try:
-        bll_call("ShipmentDispatchService.reserve_stage", request, stage_id=stage_id)
-        dto = dispatch_service().reserve_stage(employee_id=employee_id, stage_id=stage_id)
-        bll_ok("ShipmentDispatchService.reserve_stage", dto)
-        messages.success(request, "Этап зарезервирован")
-    except BusinessError as exc:
-        bll_err("ShipmentDispatchService.reserve_stage", request, exc)
-        messages.error(request, getattr(exc, "message", str(exc)))
-    return redirect(request.META.get("HTTP_REFERER") or "shipments")
-
-
-@require_POST
-@employee_required
-def ship_view(request, stage_id: int):
-    employee_id = eid(request)
-    try:
-        bll_call("ShipmentDispatchService.ship_stage", request, stage_id=stage_id)
-        dto = dispatch_service().ship_stage(employee_id=employee_id, stage_id=stage_id)
-        bll_ok("ShipmentDispatchService.ship_stage", dto)
-        messages.success(request, "Этап отправлен")
-    except BusinessError as exc:
-        bll_err("ShipmentDispatchService.ship_stage", request, exc)
-        messages.error(request, getattr(exc, "message", str(exc)))
-    return redirect(request.META.get("HTTP_REFERER") or "shipments")
-
-
-@require_POST
-@employee_required
-def cancel_view(request, shipment_id: int):
-    employee_id = eid(request)
-    try:
-        bll_call("ShipmentDispatchService.cancel_shipment", request, shipment_id=shipment_id)
-        dto = dispatch_service().cancel_shipment(employee_id=employee_id, shipment_id=shipment_id)
-        bll_ok("ShipmentDispatchService.cancel_shipment", dto)
-        messages.success(request, f"Перевозка №{shipment_id} отменена")
-    except BusinessError as exc:
-        bll_err("ShipmentDispatchService.cancel_shipment", request, exc)
-        messages.error(request, getattr(exc, "message", str(exc)))
-    return redirect("shipment_detail", shipment_id=shipment_id)
+def stage_flags(request, stage: StageDTO, documents: list[StageDocumentDTO]) -> dict:
+    """Что показать в этапе по правам, складу и статусу; шаблон только проверяет флаги."""
+    perms = request.actor.permissions
+    can_create = PermissionName.SHIPMENT_CREATE in perms
+    can_dispatch = PermissionName.SHIPMENT_DISPATCH in perms
+    mine = _is_mine(request, stage)
+    status = stage.status_name
+    first_draft = mine and stage.stage_order == 1 and status == StatusName.DRAFT
+    return {
+        'panel': can_create and first_draft,
+        'reserve': can_dispatch and first_draft,
+        'reserve_disabled': not documents,
+        'reserve_hint': 'Сначала прикрепите документ' if can_create else 'Нужен документ: его прикрепляет старший кладовщик',
+        'ship': can_dispatch and mine and status == StatusName.RESERVED,
+        'driver_form': can_create and mine and status in (StatusName.WAITING, StatusName.RESERVED),
+        'incoming': (
+            PermissionName.SHIPMENT_ACCEPT in perms
+            and status == StatusName.SHIPPED
+            and stage.to_warehouse.id == request.actor.warehouse_id
+        ),
+        'waiting': status == StatusName.WAITING,
+        'cancelled': status == StatusName.CANCELLED,
+        'discrepancy': status == StatusName.DISCREPANCY,
+        'show_fact': status in (StatusName.RECEIVED, StatusName.DISCREPANCY),
+        'has_comments': any(item.comment for item in stage.items),
+    }
 
 
 @require_GET
 @employee_required
+@business_errors_as_http
+@logged
+def shipment_detail_view(request, shipment_id: int):
+    """Карточка перевозки: маршрут, этапы с товарами и документами, кнопки действий."""
+    employee_id = request.actor.employee_id
+    perms = request.actor.permissions
+    shipment = route_service().get_shipment_progress(employee_id, shipment_id)
+    stages = []
+    for stage in shipment.stages:
+        documents = [] if stage.status_name == StatusName.WAITING else route_service().list_documents(employee_id, stage.id)
+        stages.append({'stage': stage, 'documents': documents, 'flags': stage_flags(request, stage, documents)})
+    first = shipment.stages[0]
+    return render(request, 'web/detail/detail.html', {
+        'shipment': shipment,
+        'stages': stages,
+        'route': [first.from_warehouse, *(stage.to_warehouse for stage in shipment.stages)],
+        'my_warehouse_id': request.actor.warehouse_id,
+        'panel': draft_panel_context(request, shipment),
+        'can_cancel': (
+            PermissionName.SHIPMENT_CANCEL in perms
+            and all(stage.status_name in CANCELLABLE for stage in shipment.stages)
+        ),
+        'can_delete': (
+            PermissionName.SHIPMENT_CREATE in perms
+            and shipment.status_name == StatusName.DRAFT
+            and _is_mine(request, first)
+        ),
+    })
+
+
+@require_POST
+@employee_required
+@business_errors_as_messages
+@logged
+def reserve_view(request, stage_id: int):
+    """Резервирует товар этапа на складе отправления."""
+    stage = dispatch_service().reserve_stage(request.actor.employee_id, stage_id)
+    messages.success(request, f'Этап зарезервирован: товар в резерве склада «{stage.from_warehouse.title}»')
+    return redirect_back(request)
+
+
+@require_POST
+@employee_required
+@business_errors_as_messages
+@logged
+def ship_view(request, stage_id: int):
+    """Отправляет зарезервированный этап и списывает товар со склада."""
+    dispatch_service().ship_stage(request.actor.employee_id, stage_id)
+    messages.success(request, 'Этап отправлен: товар списан со склада')
+    return redirect_back(request)
+
+
+@require_POST
+@employee_required
+@business_errors_as_messages
+@logged
+def cancel_view(request, shipment_id: int):
+    """Отменяет перевозку до отправки и возвращает резерв."""
+    dispatch_service().cancel_shipment(request.actor.employee_id, shipment_id)
+    messages.success(request, f'Перевозка №{shipment_id} отменена')
+    return redirect_back(request)
+
+
+@require_GET
+@employee_required
+@business_errors_as_http
+@logged
 def document_open_view(request, stage_id: int, document_id: int):
-    """Отдаёт файл документа этапа с диска MEDIA."""
-    from django.core.files.storage import default_storage
-
-    employee_id = eid(request)
+    """Открывает файл документа этапа в браузере; права проверяет list_documents."""
+    documents = route_service().list_documents(request.actor.employee_id, stage_id)
+    document = next((d for d in documents if d.id == document_id), None)
+    if document is None:
+        raise Http404('Документ не найден')
     try:
-        docs = route_service().list_documents(employee_id, stage_id)
-    except BusinessError as exc:
-        messages.error(request, getattr(exc, "message", str(exc)))
-        raise Http404 from exc
-
-    doc = next((d for d in docs if getattr(d, "id", None) == document_id), None)
-    if doc is None:
-        raise Http404
-    path = getattr(doc, "storage_path", "") or ""
-    if not path or not default_storage.exists(path):
-        raise Http404
-    return FileResponse(default_storage.open(path, "rb"), filename=getattr(doc, "file_name", "file"))
+        file = open_stage_file(document.storage_path)
+    except FileNotFoundError:
+        logging.warning(
+            'Файл документа №%s этапа №%s не найден на диске: %s', document_id, stage_id, document.storage_path
+        )
+        raise Http404('Файл документа не найден') from None
+    return FileResponse(file, filename=document.file_name, as_attachment=False)

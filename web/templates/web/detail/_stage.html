@@ -1,0 +1,78 @@
+{% load warehouse_tags %}
+<div class="stage">
+  <div class="stage-head">
+    <h3>Этап {{ stage.stage_order }} · {{ stage.from_warehouse.title }} → {{ stage.to_warehouse.title }}</h3>
+    {% status_pill stage.status_name %}
+  </div>
+  <div class="meta">
+    <div><span>Водитель: </span>{{ stage.driver_name|default:"не назначен" }}</div>
+    {% if stage.sent_at %}<div><span>Отправлен: </span><span class="num">{{ stage.sent_at|date:"d.m.Y, H:i" }}</span></div>{% endif %}
+    {% if stage.received_at %}<div><span>Принят: </span><span class="num">{{ stage.received_at|date:"d.m.Y, H:i" }}</span></div>{% endif %}
+  </div>
+
+  {% if flags.panel %}
+    {% include "web/draft/_panel.html" %}
+  {% elif flags.waiting %}
+    <p class="note" style="margin:0">Товары заполнятся автоматически после приёмки этапа {{ stage.stage_order|add:"-1" }}.</p>
+  {% else %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Артикул</th><th>Товар</th><th class="r">По документу</th>{% if flags.show_fact %}<th class="r">Факт</th><th>Комментарий</th>{% endif %}</tr></thead>
+        <tbody>
+          {% for item in stage.items %}
+          <tr{% if flags.show_fact and item.actual_quantity != item.document_quantity %} class="diff"{% endif %}>
+            <td class="art">{{ item.article_number }}</td>
+            <td>{{ item.product_name }}</td>
+            <td class="r num">{{ item.document_quantity|qty:item.measurement_name }}</td>
+            {% if flags.show_fact %}
+            <td class="r num">{% if item.actual_quantity is None %}<span class="muted">—</span>{% else %}{{ item.actual_quantity|qty:item.measurement_name }}{% endif %}</td>
+            <td>{{ item.comment|default:"" }}</td>
+            {% endif %}
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="empty">В этапе нет товаров.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="docs">
+      <div class="docs-head"><h3>Документы <span class="muted num">· {{ documents|length }}</span></h3></div>
+      {% for d in documents %}
+      <div class="doc">
+        <span class="ext">{{ d.file_name|file_ext }}</span>
+        <a class="name linkish" href="{% url 'document_open' stage.id d.id %}" target="_blank" rel="noopener">{{ d.file_name }}</a>
+        <span class="by">{{ d.size_bytes|filesizeformat }} · {{ d.uploaded_by_name }} · {{ d.uploaded_at|date:"d.m.Y" }}</span>
+      </div>
+      {% empty %}
+      <p class="muted" style="margin:0;font-size:14px">Документов нет.</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if flags.reserve or flags.ship or flags.driver_form %}
+  <div class="actions" style="align-items:center">
+    {% if flags.reserve %}
+    <form method="post" action="{% url 'stage_reserve' stage.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.path }}">
+      <button class="btn btn-primary btn-sm" type="submit"{% if flags.reserve_disabled %} disabled{% endif %}>Зарезервировать</button>
+    </form>
+    {% if flags.reserve_disabled %}<span class="hint-inline">{{ flags.reserve_hint }}</span>{% endif %}
+    {% endif %}
+    {% if flags.ship %}
+    <form method="post" action="{% url 'stage_ship' stage.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.path }}">
+      <button class="btn btn-primary btn-sm" type="submit">Отправить</button>
+    </form>
+    {% endif %}
+  </div>
+  {% if flags.driver_form %}{% include "web/draft/_driver_form.html" %}{% endif %}
+  {% endif %}
+
+  {% if flags.incoming %}
+  <div class="actions"><span class="note" style="flex:1">Едет на ваш склад.</span><a class="btn btn-primary btn-sm" href="{% url 'receipt' %}">Перейти к приёмке</a></div>
+  {% endif %}
+  {% if flags.discrepancy %}<p class="note" style="margin:0">Приёмка завершена, факт отличается от документа.</p>{% endif %}
+  {% if flags.cancelled %}<p class="note" style="margin:0">Перевозка отменена. Если товар был в резерве, он вернулся в свободный остаток.</p>{% endif %}
+</div>

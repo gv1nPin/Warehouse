@@ -1,0 +1,62 @@
+{% extends 'web/base.html' %}
+{% load static warehouse_tags %}
+
+{% block title %}Перевозка №{{ shipment.id }}{% endblock %}
+
+{% block content %}
+<main class="screen">
+  <div>
+    <a class="back" href="{% url 'shipments' %}">← Перевозки</a>
+    <div class="head">
+      <div>
+        <h1>Перевозка №{{ shipment.id }}</h1>
+        <div class="meta muted" style="margin-top:6px">
+          <div>Плановая дата: <span class="num">{{ shipment.planned_date|date:"d.m.Y" }}</span></div>
+          <div>Создал: {{ shipment.creator_name }}</div>
+        </div>
+      </div>
+      {% status_pill shipment.status_name %}
+    </div>
+  </div>
+
+  <div class="panel section">
+    <h2 class="label">Маршрут</h2>
+    <div class="route">
+      {% for w in route %}
+      <div class="node{% if w.id == my_warehouse_id %} mine{% endif %}"><b>{{ w.title }}</b><span>{{ w.address }}</span></div>
+      {% if not forloop.last %}<span class="hop">этап {{ forloop.counter }}</span>{% endif %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="panel section">
+    {% for entry in stages %}
+      {% include "web/detail/_stage.html" with stage=entry.stage documents=entry.documents flags=entry.flags drivers=panel.drivers stock=panel.stock %}
+    {% endfor %}
+  </div>
+
+  {% if can_cancel or can_delete %}
+  <div class="actions">
+    {% if can_cancel %}
+    <details class="confirm-toggle">
+      <summary class="btn btn-danger">Отменить перевозку</summary>
+      <div class="confirm">
+        <p>Отменить перевозку №{{ shipment.id }}? Резерв вернётся в свободный остаток, все этапы получат статус «Отменено». Запись останется в истории.</p>
+        <div class="actions">
+          <form method="post" action="{% url 'shipment_cancel' shipment.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button class="btn btn-danger btn-sm" type="submit">Отменить перевозку</button>
+          </form>
+          <button class="btn btn-sm" type="button" data-confirm-close>Не надо</button>
+        </div>
+      </div>
+    </details>
+    {% endif %}
+    {% if can_delete %}{% include "web/draft/_delete_button.html" %}{% endif %}
+  </div>
+  {% endif %}
+</main>
+{% endblock %}
+
+{% block scripts %}<script src="{% static 'web/draft_form.js' %}"></script>{% endblock %}

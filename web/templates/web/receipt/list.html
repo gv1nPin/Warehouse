@@ -1,0 +1,65 @@
+{% extends 'web/base.html' %}
+{% load static l10n warehouse_tags %}
+
+{% block title %}Приёмка{% endblock %}
+
+{% block content %}
+<main class="screen">
+  <div>
+    <a class="back" href="{% url 'home' %}">← Главная</a>
+    <h1>Приёмка</h1>
+    <p class="muted" style="margin:4px 0 0">Этапы в статусе «Отправлено», которые едут на {{ warehouse_title }}.</p>
+  </div>
+
+  {% for stage in stages %}
+  <div class="panel section" data-receipt>
+    <div class="stage-head">
+      <h3>Перевозка №{{ stage.shipment_id }}, этап {{ stage.stage_order }} · {{ stage.from_warehouse.title }} → {{ stage.to_warehouse.title }}</h3>
+      {% status_pill stage.status_name %}
+    </div>
+    <div class="meta">
+      <div><span class="muted">Водитель: </span>{{ stage.driver_name|default:"не назначен" }}</div>
+      {% if stage.sent_at %}<div><span class="muted">Отправлен: </span><span class="num">{{ stage.sent_at|date:"d.m.Y, H:i" }}</span></div>{% endif %}
+    </div>
+
+    <form method="post" action="{% url 'receipt_facts' stage.id %}" style="display:grid;gap:12px">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.path }}">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Артикул</th><th>Товар</th><th class="r">По документу</th><th class="r">Факт</th><th>Комментарий</th></tr></thead>
+          <tbody>
+            {% for item in stage.items %}
+            <tr data-doc="{{ item.document_quantity|unlocalize }}">
+              <td class="art">{{ item.article_number }}</td>
+              <td>{{ item.product_name }}</td>
+              <td class="r num">{{ item.document_quantity|qty:item.measurement_name }}</td>
+              <td class="r"><input class="input fact-input" name="fact_{{ item.id }}" inputmode="decimal" value="{{ item.actual_quantity|default_if_none:'' }}" aria-label="Факт, {{ item.product_name }}" data-fact></td>
+              <td><input class="input comment-input" name="comment_{{ item.id }}" value="{{ item.comment|default:'' }}" placeholder="Нужен, если факт отличается" aria-label="Комментарий, {{ item.product_name }}" data-comment></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="actions" style="align-items:center">
+        <button class="btn" type="submit">Сохранить факт</button>
+        <span class="muted" data-diff-count></span>
+      </div>
+    </form>
+
+    <form class="actions" method="post" action="{% url 'receipt_accept' stage.id %}" style="align-items:center">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.path }}">
+      {% with unfilled=stage.items|unfilled_count %}
+      <button class="btn btn-primary" type="submit"{% if unfilled %} disabled{% endif %}>Принять этап</button>
+      {% if unfilled %}<span class="hint-inline">Заполните и сохраните факт по всем позициям</span>{% endif %}
+      {% endwith %}
+    </form>
+  </div>
+  {% empty %}
+  <div class="panel"><p class="muted" style="margin:0">На ваш склад ничего не едет.</p></div>
+  {% endfor %}
+</main>
+{% endblock %}
+
+{% block scripts %}<script src="{% static 'web/receipt.js' %}"></script>{% endblock %}
