@@ -1,0 +1,67 @@
+{% extends 'web/base.html' %}
+{% load static warehouse_tags %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<main class="screen">
+  <div>
+    <a class="back" href="{% url 'home' %}">← Главная</a>
+    <div class="head">
+      <div><h1>{{ title }}</h1><p class="muted" style="margin:4px 0 0">{{ subtitle }}</p></div>
+      {% if 'shipment:create' in perms %}<a class="btn btn-primary" href="{% url 'draft_new' %}">Создать перевозку</a>{% endif %}
+    </div>
+  </div>
+
+  {% if not own_trips %}
+  <div class="list-tools">
+    <form class="search" method="get" action="{% url 'shipments' %}" id="search-form">
+      {% for name, value in hidden_params %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+      <div class="search-box" id="search-box">
+        <span class="tokens">
+          {% for t in tokens %}
+          <span class="token"><span class="k">{{ t.tag }}:</span>{{ t.label }}<a class="token-rm" href="{{ t.remove_url }}" data-token-remove aria-label="Убрать фильтр {{ t.tag }}: {{ t.label }}">✕</a></span>
+          {% endfor %}
+        </span>
+        <input id="search-input" name="q" type="text" autocomplete="off" spellcheck="false"
+          placeholder="{% if tokens %}Добавить фильтр{% else %}Номер, статус, водитель или кто создал{% endif %}"
+          role="combobox" aria-expanded="false" aria-controls="suggest" aria-autocomplete="list" aria-label="Поиск перевозок">
+      </div>
+      <div class="suggest" id="suggest" role="listbox" aria-label="Подсказки" hidden></div>
+    </form>
+    <div class="chips" role="group" aria-label="Статус">
+      {% for c in chips %}<a class="chip" href="{{ c.url }}" aria-pressed="{% if c.pressed %}true{% else %}false{% endif %}">{{ c.label }}</a>{% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="panel" style="padding:8px">
+    <div class="list-count muted">
+      {% if filtered %}Найдено: {{ rows|length }}{% if own_trips %} · <a class="linkish" href="{% url 'shipments' %}">Показать все рейсы</a>{% endif %}{% else %}Всего: {{ rows|length }}{% endif %}
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Перевозка</th><th>Этап</th><th>Откуда → куда</th><th>Плановая дата</th><th>Водитель</th><th>Создал</th><th>Статус</th></tr></thead>
+        <tbody>
+          {% for s in rows %}
+          <tr class="row-click" data-href="{% url 'shipment_detail' s.shipment_id %}">
+            <td><a class="linkish" href="{% url 'shipment_detail' s.shipment_id %}">№{{ s.shipment_id }}</a></td>
+            <td class="num">этап {{ s.stage_order }}</td>
+            <td>{{ s.from_warehouse.title }} → {{ s.to_warehouse.title }}{% if s.to_warehouse.id == my_warehouse_id %} <span class="muted">· входящая</span>{% endif %}</td>
+            <td class="num">{{ s.planned_date|date:"d.m.Y" }}</td>
+            <td>{% if s.driver_name %}{{ s.driver_name }}{% else %}<span class="muted">не назначен</span>{% endif %}</td>
+            <td>{{ s.creator_name }}</td>
+            <td>{% status_pill s.status_name %}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="empty">Ничего не найдено.{% if filtered %} <a class="linkish" href="{% url 'shipments' %}">Сбросить фильтры</a>{% endif %}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+{{ suggest_data|json_script:"suggest-data" }}
+{% endblock %}
+
+{% block scripts %}<script src="{% static 'web/shipment_search.js' %}"></script>{% endblock %}
