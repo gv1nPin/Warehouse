@@ -1,0 +1,14 @@
+<details class="confirm-toggle">
+  <summary class="btn btn-danger">Удалить черновик</summary>
+  <div class="confirm">
+    <p>Удалить черновик №{{ shipment.id }} целиком? Этапы, товары и документы удалятся без возможности восстановления.</p>
+    <div class="actions">
+      <form method="post" action="{% url 'draft_delete' shipment.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <button class="btn btn-danger btn-sm" type="submit">Удалить</button>
+      </form>
+      <button class="btn btn-sm" type="button" data-confirm-close>Не надо</button>
+    </div>
+  </div>
+</details>

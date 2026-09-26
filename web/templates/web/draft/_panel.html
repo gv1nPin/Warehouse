@@ -1,0 +1,66 @@
+{% load warehouse_tags %}
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Артикул</th><th>Товар</th><th class="r">По документу</th><th></th></tr></thead>
+    <tbody>
+      {% for item in stage.items %}
+      <tr>
+        <td class="art">{{ item.article_number }}</td>
+        <td>{{ item.product_name }}</td>
+        <td class="r num">{{ item.document_quantity|qty:item.measurement_name }}</td>
+        <td class="r">
+          <form method="post" action="{% url 'draft_remove_item' item.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button class="icon-btn" type="submit" aria-label="Убрать {{ item.product_name }}">✕</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="empty">В этапе пока нет товаров.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<form class="item-row" method="post" action="{% url 'draft_add_item' stage.id %}" data-item-row>
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ request.path }}">
+  <div>
+    <select class="select" name="product_id" aria-label="Товар" required>
+      <option value="">Выберите товар</option>
+      {% for p in stock %}<option value="{{ p.product_id }}" data-available="{{ p.available|qty:p.measurement_name }}">{{ p.product_name }} · {{ p.article_number }}</option>{% endfor %}
+    </select>
+    <div class="hint" data-available-hint>Если товар уже есть в этапе, количество заменится.</div>
+  </div>
+  <input class="input num" name="quantity" inputmode="decimal" placeholder="Количество" aria-label="Количество" required>
+  <button class="btn btn-sm" type="submit">Добавить товар</button>
+</form>
+
+{% include "web/draft/_driver_form.html" %}
+
+<div class="docs">
+  <div class="docs-head">
+    <h3>Документы <span class="muted num">· {{ documents|length }}</span></h3>
+    <form method="post" action="{% url 'draft_attach' stage.id %}" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.path }}">
+      <label class="btn btn-sm" for="attach-{{ stage.id }}">Прикрепить документ</label>
+      <input type="file" id="attach-{{ stage.id }}" name="documents" accept=".pdf,.jpg,.jpeg,.png" multiple hidden data-autosubmit>
+    </form>
+  </div>
+  {% for d in documents %}
+  <div class="doc">
+    <span class="ext">{{ d.file_name|file_ext }}</span>
+    <a class="name linkish" href="{% url 'document_open' stage.id d.id %}" target="_blank" rel="noopener">{{ d.file_name }}</a>
+    <span class="by">{{ d.size_bytes|filesizeformat }} · {{ d.uploaded_by_name }} · {{ d.uploaded_at|date:"d.m.Y" }}</span>
+    <form method="post" action="{% url 'draft_detach' d.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.path }}">
+      <button class="icon-btn" type="submit" aria-label="Открепить {{ d.file_name }}">✕</button>
+    </form>
+  </div>
+  {% empty %}
+  <p class="warn">Документов нет. Без документа этап не зарезервировать.</p>
+  {% endfor %}
+</div>

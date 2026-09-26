@@ -1,0 +1,123 @@
+{% extends 'web/base.html' %}
+{% load static warehouse_tags %}
+
+{% block title %}Новая перевозка{% endblock %}
+
+{% block content %}
+<main class="screen">
+  <div>
+    <a class="back" href="{% url 'home' %}">← Главная</a>
+    <h1>Новая перевозка</h1>
+    <p class="muted" style="margin:4px 0 0">Создаётся черновиком. Товар резервируется отдельно, на странице перевозки.</p>
+  </div>
+
+  <form class="form" id="create-form" method="post" action="{% url 'draft_new' %}" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    <div class="form-main">
+      <div class="panel section">
+        <h3>Маршрут</h3>
+        <ol class="steps" id="route-steps">
+          <li>
+            <div class="input" style="background:var(--surface)" data-step-title="{{ my_warehouse.title|default:warehouse_title }}">{{ my_warehouse.title|default:warehouse_title }} <span class="muted">(ваш склад)</span></div>
+            <input type="hidden" name="route" value="{{ my_warehouse_id }}"><span></span>
+          </li>
+          {% for step in form.route %}
+          <li data-route-step>
+            <select class="select" name="route" aria-label="Склад маршрута">
+              {% for w in warehouses %}<option value="{{ w.id }}"{% if w.id|stringformat:"s" == step %} selected{% endif %}>{{ w.title }}</option>{% endfor %}
+            </select>
+            <button class="icon-btn" type="button" data-rm-step aria-label="Убрать склад">✕</button>
+          </li>
+          {% endfor %}
+        </ol>
+        <div><button class="btn btn-sm" type="button" id="add-step">+ Добавить склад</button></div>
+        <p class="note" style="margin:0">Каждая пара соседних складов становится этапом. Товары вносятся только в первый этап, дальше едет то, что фактически приняли.</p>
+      </div>
+
+      <div class="panel section">
+        <div class="field" style="max-width:240px">
+          <label for="plan-date">Плановая дата</label>
+          <input class="input" type="date" id="plan-date" name="planned_date" value="{{ form.planned_date }}" min="{{ min_date }}">
+        </div>
+        <div class="field" style="max-width:360px">
+          <label for="driver">Водитель первого этапа <span class="muted" style="font-weight:400">· только роль «Водитель»</span></label>
+          <select class="select" id="driver" name="driver_id">
+            <option value="">Назначу позже</option>
+            {% for d in drivers %}<option value="{{ d.id }}"{% if d.id|stringformat:"s" == form.driver_id %} selected{% endif %}>{{ d.full_name }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="panel section">
+        <h3>Товары первого этапа</h3>
+        <div id="items" style="display:grid;gap:10px">
+          {% for product_id, quantity in form.items %}
+          <div class="item-row" data-item-row>
+            <div>
+              <select class="select" name="product_id" aria-label="Товар">
+                <option value="">Выберите товар</option>
+                {% for p in stock %}<option value="{{ p.product_id }}" data-available="{{ p.available|qty:p.measurement_name }}"{% if p.product_id|stringformat:"s" == product_id %} selected{% endif %}>{{ p.product_name }} · {{ p.article_number }}</option>{% endfor %}
+              </select>
+              <div class="hint" data-available-hint></div>
+            </div>
+            <input class="input num" name="quantity" inputmode="decimal" value="{{ quantity }}" aria-label="Количество">
+            <button class="icon-btn" type="button" data-rm-item aria-label="Убрать товар">✕</button>
+          </div>
+          {% endfor %}
+        </div>
+        <div><button class="btn btn-sm" type="button" id="add-item">+ Добавить товар</button></div>
+      </div>
+
+      <div class="panel section">
+        <div class="docs-head">
+          <h3>Документы первого этапа</h3>
+          <label class="btn btn-sm" for="create-docs">+ Прикрепить документ</label>
+          <input type="file" id="create-docs" name="documents" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
+        </div>
+        <div id="create-docs-list" style="display:grid;gap:8px">
+          <p class="muted" style="margin:0;font-size:14px">Документы не прикреплены.</p>
+        </div>
+        {% if files_lost %}<p class="warn">Выберите файлы заново: браузер не сохраняет их после ошибки.</p>{% endif %}
+        <p class="note" style="margin:0">Черновик можно создать и без документов, но зарезервировать его получится, только когда прикреплён хотя бы один.</p>
+      </div>
+    </div>
+
+    <aside class="panel summary">
+      <h3>Сводка</h3>
+      <dl>
+        <div><dt>Маршрут</dt><dd id="sum-route"></dd></div>
+        <div><dt>Этапов</dt><dd id="sum-stages" class="num"></dd></div>
+        <div><dt>Позиций в первом этапе</dt><dd id="sum-items" class="num"></dd></div>
+        <div><dt>Документов</dt><dd id="sum-docs"></dd></div>
+        <div><dt>Статус после создания</dt><dd><span class="pill st-draft">Черновик</span></dd></div>
+      </dl>
+      {% if error %}<p class="error" role="alert" style="margin:0">{{ error }}</p>{% endif %}
+      <button class="btn btn-primary" type="submit">Создать черновик</button>
+    </aside>
+  </form>
+
+  <template id="route-step-template">
+    <li data-route-step>
+      <select class="select" name="route" aria-label="Склад маршрута">
+        {% for w in warehouses %}<option value="{{ w.id }}">{{ w.title }}</option>{% endfor %}
+      </select>
+      <button class="icon-btn" type="button" data-rm-step aria-label="Убрать склад">✕</button>
+    </li>
+  </template>
+  <template id="item-template">
+    <div class="item-row" data-item-row>
+      <div>
+        <select class="select" name="product_id" aria-label="Товар">
+          <option value="">Выберите товар</option>
+          {% for p in stock %}<option value="{{ p.product_id }}" data-available="{{ p.available|qty:p.measurement_name }}">{{ p.product_name }} · {{ p.article_number }}</option>{% endfor %}
+        </select>
+        <div class="hint" data-available-hint></div>
+      </div>
+      <input class="input num" name="quantity" inputmode="decimal" aria-label="Количество">
+      <button class="icon-btn" type="button" data-rm-item aria-label="Убрать товар">✕</button>
+    </div>
+  </template>
+</main>
+{% endblock %}
+
+{% block scripts %}<script src="{% static 'web/draft_form.js' %}"></script>{% endblock %}

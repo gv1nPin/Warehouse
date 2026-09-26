@@ -1,0 +1,10 @@
+<form class="actions" method="post" action="{% url 'draft_driver' stage.id %}" style="align-items:center">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ request.path }}">
+  <label class="muted" for="driver-{{ stage.id }}" style="font-size:14px">Водитель</label>
+  <select class="select" id="driver-{{ stage.id }}" name="driver_id" style="max-width:280px">
+    <option value="">Не назначен</option>
+    {% for d in drivers %}<option value="{{ d.id }}"{% if d.id == stage.driver_id %} selected{% endif %}>{{ d.full_name }}</option>{% endfor %}
+  </select>
+  <button class="btn btn-sm" type="submit">Сохранить</button>
+</form>
