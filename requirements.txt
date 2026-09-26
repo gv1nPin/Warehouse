@@ -17,3 +17,4 @@ uvicorn==0.34.0
 
 # Утилиты и конфигурация 
 python-dotenv==1.2.2
+openpyxl>=3.1.0

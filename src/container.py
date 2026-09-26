@@ -8,10 +8,11 @@ from warehouse.bll.services.shipment_service import (
     ShipmentDispatchService,
     ShipmentReceiptService,
     RouteQueryService,
-    ShipmentTransitCoordinator
+    ShipmentTransitCoordinator,
 )
 from warehouse.bll.services.auth_service import AccessService, LoginService
 from warehouse.bll.services.employee_service import EmployeeService
+from warehouse.bll.services.operation_history_service import OperationHistoryService
 
 
 class Container(containers.DeclarativeContainer):
@@ -30,15 +31,29 @@ class Container(containers.DeclarativeContainer):
         secret_key=config.jwt_secret,
         expire_minutes=config.jwt_expire_minutes,
     )
-    employee_service = providers.Factory(EmployeeService, uow_factory=uow.provider, access=access_service)
+    employee_service = providers.Factory(
+        EmployeeService, uow_factory=uow.provider, access=access_service
+    )
 
-    query_service = providers.Factory(RouteQueryService, uow_factory=uow.provider, access=access_service)
-    draft_service = providers.Factory(ShipmentDraftService, uow_factory=uow.provider, access=access_service)
-    dispatch_service = providers.Factory(ShipmentDispatchService, uow_factory=uow.provider, access=access_service)
+    query_service = providers.Factory(
+        RouteQueryService, uow_factory=uow.provider, access=access_service
+    )
+    draft_service = providers.Factory(
+        ShipmentDraftService, uow_factory=uow.provider, access=access_service
+    )
+    dispatch_service = providers.Factory(
+        ShipmentDispatchService, uow_factory=uow.provider, access=access_service
+    )
     transit_coordinator = providers.Factory(ShipmentTransitCoordinator)
     receive_service = providers.Factory(
         ShipmentReceiptService,
         uow_factory=uow.provider,
         access=access_service,
         transit=transit_coordinator,
+    )
+
+    history_service = providers.Factory(
+        OperationHistoryService,
+        uow_factory=uow.provider,
+        access=access_service,
     )
