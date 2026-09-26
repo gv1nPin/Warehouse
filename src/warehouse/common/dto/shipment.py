@@ -33,6 +33,7 @@ class StageDTO:
     shipment_status_name: str
     planned_date: date
     creator_id: int
+    creator_name: str
     from_warehouse: WarehouseDTO
     to_warehouse: WarehouseDTO
     driver_id: int | None

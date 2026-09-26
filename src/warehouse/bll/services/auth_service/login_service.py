@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 import jwt
 
+from warehouse.common import EntityName, OperationType
 from warehouse.common.exceptions import AuthError
 from warehouse.bll.interfaces.auth_service import (
     AbstractAccessService,
@@ -49,6 +50,12 @@ class LoginService(AbstractLoginService):
             if auth is None or not self._password_matches(password, auth.password_hash):
                 raise AuthError(INVALID_CREDENTIALS)
             actor = self.access.get_actor(uow, auth.employee.id)
+            uow.history.log_operation(
+                employee_id=actor.employee.id,
+                operation_type=OperationType.LOGIN,
+                entity_name=EntityName.EMPLOYEE,
+                entity_id=actor.employee.id,
+            )
 
         now = datetime.now(timezone.utc)
         expires_at = now + self._expire

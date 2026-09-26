@@ -1,36 +1,31 @@
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-# Используем современные аннотации
-from sqlalchemy import ForeignKey, Integer, String, DateTime, JSON
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.sql import func
+from sqlalchemy import DateTime, ForeignKey, Identity, String, func
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from .base import Base
 
+if TYPE_CHECKING:
+    from warehouse.dal.entities.employee import Employee
+
+
 class OperationHistory(Base):
+    """Запись журнала операций: кто, что и над чем сделал."""
+
     __tablename__ = "operation_history"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    
-    # ФИКС: Точное совпадение с именем таблицы "Employees" (с заглавной буквы)
+    id: Mapped[int] = mapped_column(Identity(), primary_key=True)
     employee_id: Mapped[int] = mapped_column(
-        Integer, 
-        ForeignKey("Employees.id", ondelete="RESTRICT"), 
-        nullable=False,
-        index=True
+        ForeignKey("Employees.id", ondelete="RESTRICT"), index=True
     )
-    
-    operation_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
-    entity_name: Mapped[str] = mapped_column(String(50), nullable=False)
-    
-    # ФИКС: Современный синтаксис Python 3.10+ (int | None вместо Optional[int])
-    entity_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    
-    # ФИКС: Современный синтаксис (dict вместо Dict)
-    details: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
-    
+    operation_type: Mapped[str] = mapped_column(String(50), index=True)
+    entity_name: Mapped[str] = mapped_column(String(50))
+    entity_id: Mapped[int | None]
+    details: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), 
-        server_default=func.now(), 
-        nullable=False
+        DateTime(timezone=True), server_default=func.now(), index=True
     )
+
+    employee: Mapped["Employee"] = relationship()

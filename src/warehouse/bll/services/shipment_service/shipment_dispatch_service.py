@@ -8,7 +8,7 @@ from warehouse.bll.interfaces.auth_service import AbstractAccessService
 from warehouse.bll.interfaces.shipment_service.abstract_shipment_dispatch_service import (
     AbstractShipmentDispatchService,
 )
-from warehouse.common import PermissionName, StatusName
+from warehouse.common import EntityName, OperationType, PermissionName, StatusName
 from warehouse.common.exceptions import InvalidStatusError, NotFoundError, ValidationError
 from warehouse.dal.unit_of_work import UnitOfWork
 
@@ -63,6 +63,17 @@ class ShipmentDispatchService(SenderGuardsMixin, AbstractShipmentDispatchService
             reserved_id = self._status_id(uow, StatusName.RESERVED)
             uow.stages.set_status(stage_id, reserved_id)
             uow.shipments.set_status(stage.shipment_id, reserved_id)
+            uow.history.log_operation(
+                employee_id=actor.employee.id,
+                operation_type=OperationType.STAGE_RESERVE,
+                entity_name=EntityName.STAGE,
+                entity_id=stage_id,
+                details={
+                    "shipment_id": stage.shipment_id,
+                    "warehouse_id": warehouse_id,
+                    "items": self._items_details(stage),
+                },
+            )
 
             logging.info(
                 "Сотрудник №%s зарезервировал этап №%s на складе №%s",
@@ -97,6 +108,16 @@ class ShipmentDispatchService(SenderGuardsMixin, AbstractShipmentDispatchService
             for stage in shipment.stages:
                 uow.stages.set_status(stage.id, cancelled_id)
             uow.shipments.set_status(shipment_id, cancelled_id)
+            uow.history.log_operation(
+                employee_id=actor.employee.id,
+                operation_type=OperationType.SHIPMENT_CANCEL,
+                entity_name=EntityName.SHIPMENT,
+                entity_id=shipment_id,
+                details={
+                    "previous_status": shipment.status_name,
+                    "released_stages": [st.id for st in shipment.stages if st.status_id == reserved_id],
+                },
+            )
 
             logging.info(
                 "Сотрудник №%s отменил перевозку №%s", actor.employee.id, shipment_id
@@ -135,6 +156,18 @@ class ShipmentDispatchService(SenderGuardsMixin, AbstractShipmentDispatchService
             shipped_id = self._status_id(uow, StatusName.SHIPPED)
             uow.stages.set_status(stage_id, shipped_id, sent_at=datetime.now(timezone.utc))
             uow.shipments.set_status(stage.shipment_id, shipped_id)
+            uow.history.log_operation(
+                employee_id=actor.employee.id,
+                operation_type=OperationType.STAGE_SHIP,
+                entity_name=EntityName.STAGE,
+                entity_id=stage_id,
+                details={
+                    "shipment_id": stage.shipment_id,
+                    "from_warehouse_id": warehouse_id,
+                    "to_warehouse_id": stage.to_warehouse.id,
+                    "items": self._items_details(stage),
+                },
+            )
 
             logging.info(
                 "Сотрудник №%s отправил этап №%s со склада №%s на склад №%s",
@@ -144,6 +177,12 @@ class ShipmentDispatchService(SenderGuardsMixin, AbstractShipmentDispatchService
                 stage.to_warehouse.id,
             )
             return self._stage(uow, stage_id)
+
+    @staticmethod
+    def _items_details(stage: StageDTO) -> list[dict[str, str | int]]:
+        return [
+            {"product_id": i.product_id, "quantity": str(i.document_quantity)} for i in stage.items
+        ]
 
     @staticmethod
     def _release_reserve(uow: UnitOfWork, stage: StageDTO) -> None:

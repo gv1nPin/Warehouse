@@ -1,28 +1,22 @@
-"""Просмотр журнала операций для администратора."""
-
-from __future__ import annotations
-
 from collections.abc import Callable
 from datetime import datetime
 
 from warehouse.bll.interfaces.auth_service import AbstractAccessService
 from warehouse.bll.interfaces.operation_history_service import AbstractOperationHistoryService
 from warehouse.common import PermissionName
-from warehouse.common.dto.operation_history import OperationHistoryDTO
+from warehouse.common.dto import OperationHistoryDTO
 from warehouse.common.exceptions import NotFoundError
 from warehouse.dal.unit_of_work import UnitOfWork
 
 
 class OperationHistoryService(AbstractOperationHistoryService):
-    """list/get по operation_history. Право: employee:manage."""
+    """Журнал операций для администратора (employee:manage)."""
 
     def __init__(
-        self,
-        uow_factory: Callable[[], UnitOfWork],
-        access: AbstractAccessService,
+        self, uow_factory: Callable[[], UnitOfWork], access: AbstractAccessService
     ) -> None:
         self._uow_factory = uow_factory
-        self.access = access
+        self._access = access
 
     def list_operations(
         self,
@@ -38,8 +32,7 @@ class OperationHistoryService(AbstractOperationHistoryService):
         offset: int = 0,
     ) -> list[OperationHistoryDTO]:
         with self._uow_factory() as uow:
-            actor = self.access.get_actor(uow, employee_id)
-            self.access.require_permission(actor, PermissionName.EMPLOYEE_MANAGE)
+            self._admin(uow, employee_id)
             return uow.history.list_operations(
                 employee_id=actor_employee_id,
                 operation_type=operation_type or None,
@@ -53,18 +46,20 @@ class OperationHistoryService(AbstractOperationHistoryService):
 
     def get_operation(self, employee_id: int, operation_id: int) -> OperationHistoryDTO:
         with self._uow_factory() as uow:
-            actor = self.access.get_actor(uow, employee_id)
-            self.access.require_permission(actor, PermissionName.EMPLOYEE_MANAGE)
-            dto = uow.history.get_by_id(operation_id)
-            if dto is None:
+            self._admin(uow, employee_id)
+            operation = uow.history.get_by_id(operation_id)
+            if operation is None:
                 raise NotFoundError(f"Запись журнала №{operation_id} не найдена")
-            return dto
+            return operation
 
     def list_filters(self, employee_id: int) -> dict[str, list[str]]:
         with self._uow_factory() as uow:
-            actor = self.access.get_actor(uow, employee_id)
-            self.access.require_permission(actor, PermissionName.EMPLOYEE_MANAGE)
+            self._admin(uow, employee_id)
             return {
                 "operation_types": uow.history.list_operation_types(),
                 "entity_names": uow.history.list_entity_names(),
             }
+
+    def _admin(self, uow: UnitOfWork, employee_id: int) -> None:
+        actor = self._access.get_actor(uow, employee_id)
+        self._access.require_permission(actor, PermissionName.EMPLOYEE_MANAGE)

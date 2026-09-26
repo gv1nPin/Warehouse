@@ -41,3 +41,31 @@ class StatusName(StrEnum):
     DISCREPANCY = "Принято с расхождениями (Discrepancy)"
     IN_TRANSIT_WH = "На транзитном складе (In Transit WH)"
     CANCELLED = "Отменено (Cancelled)"
+
+
+class OperationType(StrEnum):
+    """operation_history.operation_type: что сделал сотрудник."""
+
+    LOGIN = "auth.login"
+    EMPLOYEE_REGISTER = "employee.register"
+    SHIPMENT_CREATE = "shipment.create"
+    SHIPMENT_DELETE = "shipment.delete"
+    SHIPMENT_CANCEL = "shipment.cancel"
+    ITEM_ADD = "stage.item_add"
+    ITEM_REMOVE = "stage.item_remove"
+    DRIVER_ASSIGN = "stage.driver"
+    DOCUMENT_ATTACH = "stage.document_attach"
+    DOCUMENT_REMOVE = "stage.document_remove"
+    STAGE_RESERVE = "stage.reserve"
+    STAGE_SHIP = "stage.ship"
+    FACT_ENTER = "stage.fact"
+    STAGE_ACCEPT = "stage.accept"
+
+
+class EntityName(StrEnum):
+    """operation_history.entity_name: над чем выполнена операция."""
+
+    EMPLOYEE = "Employee"
+    SHIPMENT = "Shipment"
+    STAGE = "ShipmentStage"
+    ITEM = "StageItem"

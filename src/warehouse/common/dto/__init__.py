@@ -6,7 +6,6 @@ DTO ссылаются только на другие DTO и никогда на
 
 from .employee import EmployeeAuthDTO, EmployeeDTO, NewEmployee, RoleDTO
 from .operation_history import OperationHistoryDTO
-from .warehouse import StockItemDTO, WarehouseDTO
 from .product import ProductDTO
 from .shipment import (
     NewStage,
@@ -17,6 +16,7 @@ from .shipment import (
     StageDTO,
     StageItemDTO,
 )
+from .warehouse import StockItemDTO, WarehouseDTO
 
 __all__ = [
     "EmployeeAuthDTO",
@@ -25,6 +25,7 @@ __all__ = [
     "NewStage",
     "NewStageDocument",
     "NewStageItem",
+    "OperationHistoryDTO",
     "ProductDTO",
     "RoleDTO",
     "ShipmentDTO",
@@ -33,5 +34,4 @@ __all__ = [
     "StageItemDTO",
     "StockItemDTO",
     "WarehouseDTO",
-    "OperationHistoryDTO"
 ]

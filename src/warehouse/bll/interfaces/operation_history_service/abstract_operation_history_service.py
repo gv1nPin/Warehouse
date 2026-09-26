@@ -1,17 +1,14 @@
-"""Интерфейс просмотра журнала операций (только администратор)."""
-
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from warehouse.common.dto.operation_history import OperationHistoryDTO
+from warehouse.common.dto import OperationHistoryDTO
 
 
 class AbstractOperationHistoryService(ABC):
-    """Чтение operation_history. Пишет аудит BLL через uow.history.log_operation.
+    """Просмотр журнала операций администратором. Транзакцию открывает сам.
 
-    Транзакцию открывает сам. Доступ — PermissionName.EMPLOYEE_MANAGE (админ).
+    Пишут в журнал сами сервисы через uow.history.log_operation в своей транзакции.
+    Все методы требуют employee:manage, иначе AccessDeniedError.
     """
 
     @abstractmethod
@@ -28,16 +25,12 @@ class AbstractOperationHistoryService(ABC):
         limit: int = 100,
         offset: int = 0,
     ) -> list[OperationHistoryDTO]:
-        """Список записей. employee_id — кто запрашивает (проверка прав).
-
-        actor_employee_id — фильтр «кто совершил операцию».
-        Нет права -> AccessDeniedError.
-        """
+        """Записи журнала, новые сверху. actor_employee_id — кто совершил операцию."""
 
     @abstractmethod
     def get_operation(self, employee_id: int, operation_id: int) -> OperationHistoryDTO:
-        """Одна запись. Нет -> NotFoundError. Нет права -> AccessDeniedError."""
+        """Одна запись. Нет такой -> NotFoundError."""
 
     @abstractmethod
     def list_filters(self, employee_id: int) -> dict[str, list[str]]:
-        """Справочники для фильтров UI: operation_types, entity_names."""
+        """Значения для фильтров: operation_types и entity_names."""

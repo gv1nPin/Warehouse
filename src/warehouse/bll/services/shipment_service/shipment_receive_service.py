@@ -11,7 +11,7 @@ from warehouse.bll.interfaces.shipment_service.abstract_shipment_receipt_service
 from warehouse.bll.interfaces.shipment_service.abstract_shipment_transit_coordinator import (
     AbstractShipmentTransitCoordinator,
 )
-from warehouse.common import PermissionName, StatusName
+from warehouse.common import EntityName, OperationType, PermissionName, StatusName
 from warehouse.common.exceptions import (
     InvalidStatusError,
     NotFoundError,
@@ -74,6 +74,19 @@ class ShipmentReceiptService(AbstractShipmentReceiptService):
                 raise ValidationError("Факт расходится с документом — заполните комментарий")
 
             uow.stage_items.set_actual_quantity(item_id, quantity, comment)
+            uow.history.log_operation(
+                employee_id=actor.employee.id,
+                operation_type=OperationType.FACT_ENTER,
+                entity_name=EntityName.ITEM,
+                entity_id=item_id,
+                details={
+                    "stage_id": stage.id,
+                    "product_id": item.product_id,
+                    "document_quantity": str(item.document_quantity),
+                    "actual_quantity": str(quantity),
+                    "comment": comment,
+                },
+            )
 
     def check_discrepancies(self, employee_id: int, stage_id: int) -> list[StageItemDTO]:
         with self._uow_factory() as uow:
@@ -116,6 +129,27 @@ class ShipmentReceiptService(AbstractShipmentReceiptService):
                     )
 
             self._transit.after_stage_accepted(uow, stage_id)
+            uow.history.log_operation(
+                employee_id=actor.employee.id,
+                operation_type=OperationType.STAGE_ACCEPT,
+                entity_name=EntityName.STAGE,
+                entity_id=stage_id,
+                details={
+                    "shipment_id": stage.shipment_id,
+                    "warehouse_id": stage.to_warehouse.id,
+                    "status": final_status,
+                    "discrepancies": [
+                        {
+                            "product_id": i.product_id,
+                            "document_quantity": str(i.document_quantity),
+                            "actual_quantity": str(i.actual_quantity),
+                            "comment": i.comment,
+                        }
+                        for i in stage.items
+                        if self._is_discrepancy(i)
+                    ],
+                },
+            )
 
             logging.info(
                 "Сотрудник №%s принял этап №%s на складе №%s со статусом «%s»",

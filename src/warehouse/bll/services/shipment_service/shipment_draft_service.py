@@ -18,7 +18,7 @@ from warehouse.bll.interfaces.auth_service import AbstractAccessService
 from warehouse.bll.interfaces.shipment_service.abstract_shipment_draft_service import (
     AbstractShipmentDraftService,
 )
-from warehouse.common import PermissionName, RoleName, StatusName
+from warehouse.common import EntityName, OperationType, PermissionName, RoleName, StatusName
 from warehouse.common.exceptions import (
     InvalidStatusError,
     NotFoundError,
@@ -150,6 +150,19 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
                 raise NotFoundError(f"Стартовый этап перевозки №{shipment_id} не инициализирован")
             for document in documents:
                 uow.stage_documents.add(first_stage.id, actor.employee.id, document)
+            uow.history.log_operation(
+                employee_id=actor.employee.id,
+                operation_type=OperationType.SHIPMENT_CREATE,
+                entity_name=EntityName.SHIPMENT,
+                entity_id=shipment_id,
+                details={
+                    "route": route,
+                    "planned_date": planned_date.isoformat(),
+                    "items": [{"product_id": i.product_id, "quantity": str(i.quantity)} for i in items],
+                    "driver_id": driver_id,
+                    "documents": [d.file_name for d in documents],
+                },
+            )
 
             logging.info(
                 "Сотрудник №%s создал черновик перевозки №%s по маршруту %s, документов: %s",
@@ -178,6 +191,13 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
                 uow.stage_items.add(stage_id, product_id, quantity)
             else:
                 uow.stage_items.set_document_quantity(existing.id, quantity)
+            uow.history.log_operation(
+                employee_id=actor.employee.id,
+                operation_type=OperationType.ITEM_ADD,
+                entity_name=EntityName.STAGE,
+                entity_id=stage_id,
+                details={"product_id": product_id, "quantity": str(quantity), "replaced": existing is not None},
+            )
 
     def remove_item(self, employee_id: int, item_id: int) -> None:
         with self._uow_factory() as uow:
@@ -189,6 +209,13 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
 
             self._editable_stage(uow, actor, item.stage_id)
             uow.stage_items.delete(item_id)
+            uow.history.log_operation(
+                employee_id=actor.employee.id,
+                operation_type=OperationType.ITEM_REMOVE,
+                entity_name=EntityName.STAGE,
+                entity_id=item.stage_id,
+                details={"product_id": item.product_id, "quantity": str(item.document_quantity)},
+            )
 
     def assign_driver(self, employee_id: int, stage_id: int, driver_id: int | None) -> None:
         with self._uow_factory() as uow:
@@ -204,6 +231,13 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
                 self._require_driver(uow, driver_id, stage.from_warehouse.id)
 
             uow.stages.assign_driver(stage_id, driver_id)
+            uow.history.log_operation(
+                employee_id=actor.employee.id,
+                operation_type=OperationType.DRIVER_ASSIGN,
+                entity_name=EntityName.STAGE,
+                entity_id=stage_id,
+                details={"driver_id": driver_id, "previous_driver_id": stage.driver_id},
+            )
 
     def delete_draft(self, employee_id: int, shipment_id: int) -> None:
         with self._uow_factory() as uow:
@@ -220,6 +254,13 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
                 )
 
             uow.shipments.delete(shipment_id)
+            uow.history.log_operation(
+                employee_id=actor.employee.id,
+                operation_type=OperationType.SHIPMENT_DELETE,
+                entity_name=EntityName.SHIPMENT,
+                entity_id=shipment_id,
+                details={"route": [shipment.stages[0].from_warehouse.id] + [st.to_warehouse.id for st in shipment.stages]},
+            )
             logging.info(
                 "Сотрудник №%s удалил черновик перевозки №%s", actor.employee.id, shipment_id
             )
@@ -236,6 +277,13 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
             self._editable_stage(uow, actor, stage_id)
 
             document_id = uow.stage_documents.add(stage_id, actor.employee.id, document)
+            uow.history.log_operation(
+                employee_id=actor.employee.id,
+                operation_type=OperationType.DOCUMENT_ATTACH,
+                entity_name=EntityName.STAGE,
+                entity_id=stage_id,
+                details={"document_id": document_id, "file_name": document.file_name},
+            )
             logging.info(
                 "Сотрудник №%s прикрепил документ «%s» к этапу №%s",
                 actor.employee.id,
@@ -254,6 +302,13 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
 
             self._editable_stage(uow, actor, document.stage_id)
             uow.stage_documents.delete(document_id)
+            uow.history.log_operation(
+                employee_id=actor.employee.id,
+                operation_type=OperationType.DOCUMENT_REMOVE,
+                entity_name=EntityName.STAGE,
+                entity_id=document.stage_id,
+                details={"document_id": document_id, "file_name": document.file_name},
+            )
             return document
 
     # ---------- Утилиты ----------

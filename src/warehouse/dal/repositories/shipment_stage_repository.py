@@ -12,6 +12,7 @@ from .base_repository import BaseRepository
 # Что подгружать вместе с этапом, чтобы маппер не делал лишних запросов.
 STAGE_OPTIONS = (
     joinedload(ShipmentStage.shipment).joinedload(Shipment.status),
+    joinedload(ShipmentStage.shipment).joinedload(Shipment.creator),
     joinedload(ShipmentStage.status),
     joinedload(ShipmentStage.from_warehouse),
     joinedload(ShipmentStage.to_warehouse),

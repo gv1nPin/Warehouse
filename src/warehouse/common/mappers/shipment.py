@@ -42,6 +42,7 @@ def to_stage(st: ShipmentStage, with_items: bool = False) -> StageDTO:
         shipment_status_name=st.shipment.status.status_name,
         planned_date=st.shipment.planned_date,
         creator_id=st.shipment.creator_id,
+        creator_name=st.shipment.creator.full_name,
         from_warehouse=to_warehouse(st.from_warehouse),
         to_warehouse=to_warehouse(st.to_warehouse),
         driver_id=st.driver_id,

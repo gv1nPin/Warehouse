@@ -3,7 +3,7 @@ from collections.abc import Callable
 
 from warehouse.bll.interfaces.auth_service import AbstractAccessService, ActorDTO
 from warehouse.bll.interfaces.employee_service import AbstractEmployeeService
-from warehouse.common import PermissionName
+from warehouse.common import EntityName, OperationType, PermissionName
 from warehouse.common.dto import EmployeeDTO, NewEmployee, RoleDTO, WarehouseDTO
 from warehouse.common.exceptions import NotFoundError, ValidationError
 from warehouse.common.security import hash_password
@@ -72,6 +72,13 @@ class EmployeeService(AbstractEmployeeService):
                 password_hash=hash_password(password),
                 warehouse_id=employee.warehouse_id,
                 role_id=employee.role_id,
+            )
+            uow.history.log_operation(
+                employee_id=admin.employee.id,
+                operation_type=OperationType.EMPLOYEE_REGISTER,
+                entity_name=EntityName.EMPLOYEE,
+                entity_id=employee_id,
+                details={"login": login, "role_id": employee.role_id, "warehouse_id": employee.warehouse_id},
             )
             logging.info(
                 "Администратор №%s зарегистрировал сотрудника №%s (%s)",

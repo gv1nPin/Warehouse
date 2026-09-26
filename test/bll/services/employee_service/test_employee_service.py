@@ -4,7 +4,7 @@ from unittest import mock
 from warehouse.bll.interfaces.auth_service import ActorDTO
 from warehouse.bll.services.auth_service import AccessService
 from warehouse.bll.services.employee_service import EmployeeService
-from warehouse.common import PermissionName
+from warehouse.common import OperationType, PermissionName
 from warehouse.common.dto import EmployeeDTO, NewEmployee, WarehouseDTO
 from warehouse.common.exceptions import AccessDeniedError, NotFoundError, ValidationError
 from warehouse.common.security import verify_password
@@ -37,12 +37,16 @@ class EmployeeServiceTests(unittest.TestCase):
         self.assertEqual(kwargs['first_name'], 'Пётр')
         self.assertTrue(verify_password('password1', kwargs['password_hash']))
         self.uow.employees.get_by_id.assert_called_with(42)
+        audit = self.uow.history.log_operation.call_args.kwargs
+        self.assertEqual((audit['operation_type'], audit['entity_id']), (OperationType.EMPLOYEE_REGISTER, 42))
+        self.assertNotIn('password', str(audit['details']))
 
     def test_login_taken(self):
         self.uow.employees.login_exists.return_value = True
         with self.assertRaisesRegex(ValidationError, 'Логин «sidorov» уже занят'):
             self.service.register(ADMIN.id, NEW)
         self.uow.employees.create.assert_not_called()
+        self.uow.history.log_operation.assert_not_called()
 
     def test_short_password(self):
         with self.assertRaises(ValidationError):
