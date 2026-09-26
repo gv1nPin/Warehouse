@@ -1,0 +1,86 @@
+{% extends 'web/base.html' %}
+{% load warehouse_tags %}
+
+{% block title %}Журнал операций{% endblock %}
+
+{% block content %}
+<main class="screen">
+  <div>
+    <a class="back" href="{% url 'home' %}">← Главная</a>
+    <div class="head">
+      <div>
+        <h1>Журнал операций</h1>
+        <p class="muted" style="margin:4px 0 0">Кто, что и когда сделал. Запись появляется только у выполненного действия.</p>
+      </div>
+      <a class="btn btn-primary" href="{% url 'operations_export' %}?{{ query }}">Скачать Excel</a>
+    </div>
+  </div>
+
+  <form method="get" action="{% url 'operations' %}" class="panel journal-filters">
+    <div class="field">
+      <label for="f-employee">ID сотрудника</label>
+      <input class="input" id="f-employee" name="employee_id" value="{{ raw.employee_id }}" inputmode="numeric" placeholder="все">
+    </div>
+    <div class="field">
+      <label for="f-type">Операция</label>
+      <select class="select" id="f-type" name="operation_type">
+        <option value="">Все</option>
+        {% for t in choices.operation_types %}<option value="{{ t }}"{% if t == raw.operation_type %} selected{% endif %}>{{ t|operation_label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="f-entity">Сущность</label>
+      <select class="select" id="f-entity" name="entity_name">
+        <option value="">Все</option>
+        {% for n in choices.entity_names %}<option value="{{ n }}"{% if n == raw.entity_name %} selected{% endif %}>{{ n }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="f-entity-id">ID сущности</label>
+      <input class="input" id="f-entity-id" name="entity_id" value="{{ raw.entity_id }}" inputmode="numeric" placeholder="любой">
+    </div>
+    <div class="field">
+      <label for="f-since">С</label>
+      <input class="input" id="f-since" name="since" type="datetime-local" value="{{ raw.since }}">
+    </div>
+    <div class="field">
+      <label for="f-until">По</label>
+      <input class="input" id="f-until" name="until" type="datetime-local" value="{{ raw.until }}">
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" type="submit">Применить</button>
+      <a class="btn" href="{% url 'operations' %}">Сбросить</a>
+    </div>
+  </form>
+
+  <div class="panel" style="padding:8px">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>№</th><th>Время</th><th>Сотрудник</th><th>Операция</th><th>Сущность</th><th>Детали</th></tr></thead>
+        <tbody>
+          {% for op in operations %}
+          <tr>
+            <td><a class="linkish" href="{% url 'operation_detail' op.id %}">{{ op.id }}</a></td>
+            <td class="num">{{ op.created_at|date:"d.m.Y H:i:s" }}</td>
+            <td>{{ op.employee_name }} <span class="muted">#{{ op.employee_id }}</span></td>
+            <td>{{ op.operation_type|operation_label }}</td>
+            <td>{{ op.entity_name }}{% if op.entity_id %} <span class="art">#{{ op.entity_id }}</span>{% endif %}</td>
+            <td class="muted journal-details">{{ op.details|as_json }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="empty">Записей нет</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if page > 1 or has_next %}
+  <div class="actions">
+    {% if page > 1 %}<a class="btn" href="?{{ query }}&page={{ page|add:'-1' }}">← Назад</a>{% endif %}
+    <span class="hint-inline">Страница {{ page }}</span>
+    {% if has_next %}<a class="btn" href="?{{ query }}&page={{ page|add:'1' }}">Дальше →</a>{% endif %}
+  </div>
+  {% endif %}
+</main>
+{% endblock %}

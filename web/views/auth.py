@@ -7,6 +7,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from warehouse.common.exceptions import BusinessError
 
 from ..auth import authenticate, employee_required, sign_in, sign_out
+from ..controller_logging import logged
 from ..errors import business_errors_as_http
 from ..forms import RegisterForm
 from ..services import employee_service, login_service
@@ -21,6 +22,7 @@ def _safe_next(request, url: str) -> str:
 
 
 @require_http_methods(['GET', 'POST'])
+@logged
 def login_view(request):
     """Страница входа по логину и паролю."""
     if request.method == 'GET' and authenticate(request) is not None:
@@ -44,6 +46,7 @@ def login_view(request):
 
 
 @require_POST
+@logged
 def logout_view(request):
     """Выход: сессия очищается целиком."""
     sign_out(request)
@@ -53,6 +56,7 @@ def logout_view(request):
 @require_http_methods(['GET', 'POST'])
 @employee_required
 @business_errors_as_http
+@logged
 def register_view(request):
     """Регистрация сотрудника администратором."""
     admin_id = request.actor.employee_id

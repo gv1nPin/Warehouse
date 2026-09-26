@@ -1,0 +1,22 @@
+{% extends 'web/base.html' %}
+{% load warehouse_tags %}
+
+{% block title %}Операция №{{ op.id }}{% endblock %}
+
+{% block content %}
+<main class="screen">
+  <div>
+    <a class="back" href="{% url 'operations' %}">← Журнал операций</a>
+    <h1>Операция №{{ op.id }}</h1>
+    <p class="muted" style="margin:4px 0 0">{{ op.created_at|date:"d.m.Y H:i:s" }}</p>
+  </div>
+  <div class="panel">
+    <dl class="journal-card">
+      <div><dt>Сотрудник</dt><dd>{{ op.employee_name }} <span class="art">#{{ op.employee_id }}</span></dd></div>
+      <div><dt>Операция</dt><dd>{{ op.operation_type|operation_label }} <span class="art">{{ op.operation_type }}</span></dd></div>
+      <div><dt>Сущность</dt><dd>{{ op.entity_name }}{% if op.entity_id %} <span class="art">#{{ op.entity_id }}</span>{% endif %}</dd></div>
+      <div><dt>Детали</dt><dd>{% if details %}<pre class="journal-json">{{ details }}</pre>{% else %}<span class="muted">—</span>{% endif %}</dd></div>
+    </dl>
+  </div>
+</main>
+{% endblock %}

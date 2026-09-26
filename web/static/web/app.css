@@ -230,3 +230,28 @@ tr.diff td{background:color-mix(in srgb, var(--discrepancy-bg) 55%, transparent)
   h1{font-size:22px}
 }
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+/* ссылки-кнопки */
+a{color:inherit;text-decoration:none}
+a.counter,a.tile{color:var(--ink)}
+.token a.token-rm{width:24px;height:24px;border-radius:6px;color:var(--muted);display:grid;place-items:center}
+.token a.token-rm:hover{color:var(--danger);background:var(--surface)}
+a.chip{display:inline-flex}
+
+/* подтверждение внутри details */
+.confirm-toggle[open]{flex:1 1 100%}
+.confirm-toggle summary{list-style:none;display:inline-flex}
+.confirm-toggle summary::-webkit-details-marker{display:none}
+.confirm-toggle[open] summary{display:none}
+
+/* приёмка */
+.comment-input.required{border-color:var(--danger)}
+
+/* журнал операций */
+.journal-filters{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));align-items:end}
+.journal-filters .actions{grid-column:span 2;flex-wrap:nowrap}
+.journal-details{max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--mono);font-size:12.5px}
+.journal-card{margin:0;display:grid;gap:14px}
+.journal-card dt{font-size:13px;color:var(--muted)}
+.journal-card dd{margin:4px 0 0}
+.journal-json{margin:0;padding:12px;background:var(--surface-2);border-radius:10px;overflow:auto;font-family:var(--mono);font-size:13px}
