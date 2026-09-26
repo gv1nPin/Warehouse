@@ -1,191 +1,101 @@
-"""Главная и остатки."""
-from __future__ import annotations
-
-from decimal import Decimal
-
-from django.contrib import messages
-from django.shortcuts import render
 from django.urls import reverse
+from django.shortcuts import render
 from django.views.decorators.http import require_GET
 
 from warehouse.common import PermissionName, StatusName
-from warehouse.common.exceptions import BusinessError
 
 from ..auth import employee_required
-from ..services import draft_service, route_service
-from ..status_ui import status_css
-from ._helpers import bll_call, bll_err, bll_ok, eid, has_perm, home_layout
+from ..controller_logging import logged
+from ..errors import business_errors_as_http
+from ..services import receipt_service, route_service, stock_service
+
+CREATE = PermissionName.SHIPMENT_CREATE
+DISPATCH = PermissionName.SHIPMENT_DISPATCH
+ACCEPT = PermissionName.SHIPMENT_ACCEPT
+VIEW_ALL = PermissionName.SHIPMENT_VIEW_ALL
+WAREHOUSE_PERMISSIONS = frozenset({CREATE, DISPATCH, ACCEPT})
+SHIPMENT_PERMISSIONS = WAREHOUSE_PERMISSIONS | {VIEW_ALL}
+
+
+def _counter(title: str, hint: str, status: StatusName, number: int, url: str) -> dict:
+    """Плашка блока «Требует внимания»."""
+    return {'title': title, 'hint': hint, 'status': status, 'number': number, 'url': url}
+
+
+def _tile(title: str, hint: str, url: str) -> dict:
+    """Плитка блока «Действия»."""
+    return {'title': title, 'hint': hint, 'url': url}
+
+
+def home_counters(request, stages) -> list[dict]:
+    """Счётчики по правам сотрудника; ссылки ведут на фильтры списка перевозок."""
+    perms = request.actor.permissions
+    shipments = reverse('shipments')
+    by_status = {status: sum(1 for s in stages if s.status_name == status) for status in StatusName}
+    counters = []
+    if perms & {CREATE, VIEW_ALL}:
+        counters.append(_counter('Черновики', 'Ещё не зарезервированы', StatusName.DRAFT,
+                                 by_status[StatusName.DRAFT], f'{shipments}?status=draft'))
+    if perms & {DISPATCH, VIEW_ALL}:
+        counters.append(_counter('Ждут отправки', 'Товар в резерве', StatusName.RESERVED,
+                                 by_status[StatusName.RESERVED], f'{shipments}?status=reserved'))
+    if ACCEPT in perms:
+        incoming = len(receipt_service().get_incoming(request.actor.employee_id))
+        counters.append(_counter('Едет к вам', f'Отправлено на {request.session.get("warehouse_title", "ваш склад")}',
+                                 StatusName.SHIPPED, incoming, reverse('receipt')))
+    if perms & {CREATE, VIEW_ALL}:
+        counters.append(_counter('Расхождения', 'Факт не совпал с документом', StatusName.DISCREPANCY,
+                                 by_status[StatusName.DISCREPANCY], f'{shipments}?status=discrepancy'))
+    if not perms & SHIPMENT_PERMISSIONS:
+        counters.append(_counter('Предстоящие рейсы', 'Зарезервированы, ждут отправки', StatusName.RESERVED,
+                                 by_status[StatusName.RESERVED], f'{shipments}?status=reserved'))
+    return counters
+
+
+def home_tiles(request) -> tuple[list[dict], list[dict]]:
+    """Крупные и дополнительные плитки: показываем только доступные сотруднику."""
+    perms = request.actor.permissions
+    main, extra = [], []
+    if CREATE in perms:
+        main.append(_tile('Создать перевозку', 'Маршрут, товары, водитель, документы', reverse('draft_new')))
+    if perms & SHIPMENT_PERMISSIONS:
+        title = 'Все перевозки' if VIEW_ALL in perms else 'Посмотреть перевозки'
+        main.append(_tile(title, 'Исходящие и входящие этапы склада', reverse('shipments')))
+    else:
+        main.append(_tile('Мои рейсы', 'Этапы, где вы водитель', reverse('shipments')))
+    if ACCEPT in perms:
+        extra.append(_tile('Приёмка', 'Ввод факта и приёмка этапов', reverse('receipt')))
+    if perms & WAREHOUSE_PERMISSIONS:
+        extra.append(_tile('Остатки', 'На складе, в резерве, доступно', reverse('stock')))
+    if PermissionName.EMPLOYEE_MANAGE in perms:
+        extra.append(_tile('Журнал операций', 'Кто, что и когда сделал', reverse('operations')))
+    return main, extra
 
 
 @require_GET
 @employee_required
+@business_errors_as_http
+@logged
 def home_view(request):
-    """Главная: счётчики и плитки по permissions из БД."""
-    layout = home_layout(request)
-    employee_id = eid(request)
-
-    try:
-        bll_call("RouteQueryService.list_routes", request, only_active=False)
-        stages = route_service().list_routes(employee_id, only_active=False)
-        bll_ok("RouteQueryService.list_routes", count=len(stages))
-    except BusinessError as exc:
-        bll_err("RouteQueryService.list_routes", request, exc)
-        stages = []
-        messages.error(request, getattr(exc, "message", str(exc)))
-
-    def count_status(name: StatusName) -> int:
-        return sum(1 for s in stages if getattr(s, "status_name", "") == name)
-
-    me = request.session.get("employee_name", "")
-
-    def count_trips() -> int:
-        return sum(
-            1
-            for s in stages
-            if getattr(s, "status_name", "") == StatusName.RESERVED
-            and me
-            and me in (getattr(s, "driver_name", None) or "")
-        )
-
-    counter_meta = {
-        "draft": {
-            "t": "Черновики",
-            "h": "Ещё не зарезервированы",
-            "st": status_css(StatusName.DRAFT),
-            "n": count_status(StatusName.DRAFT),
-            "url": reverse("shipments") + f"?status={StatusName.DRAFT}",
-        },
-        "reserved": {
-            "t": "Ждут отправки",
-            "h": "Товар в резерве",
-            "st": status_css(StatusName.RESERVED),
-            "n": count_status(StatusName.RESERVED),
-            "url": reverse("shipments") + f"?status={StatusName.RESERVED}",
-        },
-        "incoming": {
-            "t": "Едет к вам",
-            "h": "Отправлено на ваш склад",
-            "st": status_css(StatusName.SHIPPED),
-            "n": count_status(StatusName.SHIPPED),
-            "url": reverse("receipt"),
-        },
-        "discrepancy": {
-            "t": "Расхождения",
-            "h": "Факт не совпал с документом",
-            "st": status_css(StatusName.DISCREPANCY),
-            "n": count_status(StatusName.DISCREPANCY),
-            "url": reverse("shipments") + f"?status={StatusName.DISCREPANCY}",
-        },
-        "trips": {
-            "t": "Предстоящие рейсы",
-            "h": "Зарезервированы, ждут отправки",
-            "st": status_css(StatusName.RESERVED),
-            "n": count_trips(),
-            "url": reverse("shipments") + "?trips=1",
-        },
-    }
-
-    tile_meta = {
-        "create": {
-            "t": "Создать перевозку",
-            "d": "Маршрут, товары, водитель, документы",
-            "url": reverse("draft_new"),
-        },
-        "shipments": {
-            "t": "Посмотреть перевозки",
-            "d": "Исходящие и входящие этапы склада",
-            "url": reverse("shipments"),
-        },
-        "receipt": {
-            "t": "Приёмка",
-            "d": "Ввод факта и приёмка этапов",
-            "url": reverse("receipt"),
-        },
-        "stock": {
-            "t": "Остатки",
-            "d": "На складе, в резерве, доступно",
-            "url": reverse("stock"),
-        },
-        "docs": {
-            "t": "Документы",
-            "d": "Накладные, акты, фото",
-            "url": reverse("shipments"),
-        },
-        "employees": {
-            "t": "Сотрудники",
-            "d": "Регистрация и блокировка",
-            "url": reverse("employee_new"),
-        },
-        "refs": {
-            "t": "Справочники",
-            "d": "Товары, склады, единицы",
-            "url": reverse("home"),
-        },
-        "trips": {
-            "t": "Мои рейсы",
-            "d": "Этапы, где вы водитель",
-            "url": reverse("shipments") + "?trips=1",
-        },
-        "operations": {
-            "t": "Журнал операций",
-            "d": "Аудит действий сотрудников",
-            "url": reverse("operations"),
-        },
-    }
-
-    return render(
-        request,
-        "web/pages/home.html",
-        {
-            "counters": [counter_meta[k] for k in layout["counters"] if k in counter_meta],
-            "main_tiles": [tile_meta[k] for k in layout["main"] if k in tile_meta],
-            "extra_tiles": [tile_meta[k] for k in layout["extra"] if k in tile_meta],
-        },
-    )
+    """Главная: что требует внимания и куда перейти."""
+    stages = route_service().list_routes(request.actor.employee_id, only_active=False)
+    main, extra = home_tiles(request)
+    return render(request, 'web/home/home.html', {
+        'counters': home_counters(request, stages),
+        'main_tiles': main,
+        'extra_tiles': extra,
+    })
 
 
 @require_GET
 @employee_required
+@business_errors_as_http
+@logged
 def stock_view(request):
-    """Остатки склада сотрудника (list_available_stock)."""
-    q = (request.GET.get("q") or "").strip().lower()
-    employee_id = eid(request)
-    try:
-        bll_call("ShipmentDraftService.list_available_stock", request)
-        stocks = draft_service().list_available_stock(employee_id)
-        bll_ok("ShipmentDraftService.list_available_stock", count=len(stocks))
-    except BusinessError as exc:
-        bll_err("ShipmentDraftService.list_available_stock", request, exc)
-        messages.error(request, getattr(exc, "message", str(exc)))
-        stocks = []
-
-    rows = []
-    for s in stocks:
-        article = getattr(s, "article_number", "") or ""
-        name = getattr(s, "product_name", "") or ""
-        if q and q not in article.lower() and q not in name.lower():
-            continue
-        qty = getattr(s, "quantity", Decimal(0))
-        reserved = getattr(s, "reserved_quantity", Decimal(0))
-        available = getattr(s, "available", qty - reserved)
-        rows.append(
-            {
-                "article": article,
-                "name": name,
-                "unit": getattr(s, "measurement_name", ""),
-                "qty": qty,
-                "reserved": reserved,
-                "available": available,
-            }
-        )
-
-    return render(
-        request,
-        "web/pages/stock.html",
-        {
-            "warehouse_label": request.session.get("warehouse_title") or "Ваш склад",
-            "q": request.GET.get("q") or "",
-            "rows": rows,
-            "can_manage": has_perm(request, PermissionName.EMPLOYEE_MANAGE),
-        },
-    )
+    """Остатки склада сотрудника с поиском по артикулу и названию."""
+    query = request.GET.get('q', '').strip()
+    rows = stock_service().list_stock(request.actor.employee_id)
+    if query:
+        needle = query.casefold()
+        rows = [r for r in rows if needle in r.article_number.casefold() or needle in r.product_name.casefold()]
+    return render(request, 'web/home/stock.html', {'rows': rows, 'q': query})
