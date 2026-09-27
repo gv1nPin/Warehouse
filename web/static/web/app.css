@@ -248,10 +248,15 @@ a.chip{display:inline-flex}
 .comment-input.required{border-color:var(--danger)}
 
 /* журнал операций */
-.journal-filters{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));align-items:end}
-.journal-filters .actions{grid-column:span 2;flex-wrap:nowrap}
+form.panel.journal-filters{display:flex!important;flex-flow:row wrap!important;gap:12px!important;align-items:flex-end!important;grid-template-columns:none!important}
+form.panel.journal-filters input,form.panel.journal-filters select{max-width:140px!important;width:100%!important;box-sizing:border-box!important}
+form.panel.journal-filters input[type="datetime-local"]{max-width:185px!important}
+form.panel.journal-filters .actions{display:inline-flex!important;flex-direction:row!important;flex-wrap:nowrap!important;gap:8px!important;flex:0 0 auto!important;grid-column:auto!important;align-self:flex-end!important;margin:0!important}
+
 .journal-details{max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--mono);font-size:12.5px}
 .journal-card{margin:0;display:grid;gap:14px}
 .journal-card dt{font-size:13px;color:var(--muted)}
 .journal-card dd{margin:4px 0 0}
 .journal-json{margin:0;padding:12px;background:var(--surface-2);border-radius:10px;overflow:auto;font-family:var(--mono);font-size:13px}
+
+
