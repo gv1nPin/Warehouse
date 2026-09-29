@@ -6,7 +6,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import contains_eager, joinedload
 
 from warehouse.common.dto import StockItemDTO
-from warehouse.dal.entities import Product, StockOnWarehouse
+from warehouse.dal.entities import Product, StockOnWarehouse, Warehouse
 from warehouse.common.mappers import to_stock_item
 from .base_repository import BaseRepository
 
@@ -16,17 +16,21 @@ class StockRepository(BaseRepository[StockOnWarehouse]):
 
     model = StockOnWarehouse
 
-    def _select(self, warehouse_id: int, for_update: bool = False):
+    def _select(self, warehouse_id: int | None = None, for_update: bool = False):
         stmt = (
             select(StockOnWarehouse)
             .join(StockOnWarehouse.product)
+            .join(StockOnWarehouse.warehouse)
             .options(
                 contains_eager(StockOnWarehouse.product).joinedload(
                     Product.measurement, innerjoin=True
-                )
+                ),
+                contains_eager(StockOnWarehouse.warehouse),
             )
-            .where(StockOnWarehouse.warehouse_id == warehouse_id, Product.is_deleted.is_(False))
+            .where(Product.is_deleted.is_(False))
         )
+        if warehouse_id is not None:
+            stmt = stmt.where(StockOnWarehouse.warehouse_id == warehouse_id)
         if for_update:
             # Блокируем строки остатков до конца транзакции, чтобы два кладовщика
             # не зарезервировали один и тот же товар одновременно.
@@ -53,6 +57,14 @@ class StockRepository(BaseRepository[StockOnWarehouse]):
         )
         return {s.product_id: to_stock_item(s) for s in self._all(stmt)}
 
+    def list_all(self) -> list[StockItemDTO]:
+        """Администратор: остатки всех складов, сгруппированы по складу."""
+        stmt = (
+            self._select()
+            .where(Warehouse.is_deleted.is_(False))
+            .order_by(Warehouse.title, Product.product_name)
+        )
+        return [to_stock_item(s) for s in self._all(stmt)]
 
     def list_by_warehouse(self, warehouse_id: int) -> list[StockItemDTO]:
         stmt = self._select(warehouse_id).order_by(Product.product_name)

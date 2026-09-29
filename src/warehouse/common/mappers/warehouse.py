@@ -9,6 +9,7 @@ def to_warehouse(w: Warehouse) -> WarehouseDTO:
 def to_stock_item(s: StockOnWarehouse) -> StockItemDTO:
     return StockItemDTO(
         warehouse_id=s.warehouse_id,
+        warehouse_title=s.warehouse.title,
         product_id=s.product_id,
         article_number=s.product.article_number,
         product_name=s.product.product_name,

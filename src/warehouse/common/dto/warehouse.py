@@ -12,6 +12,7 @@ class WarehouseDTO:
 @dataclass(frozen=True, slots=True)
 class StockItemDTO:
     warehouse_id: int
+    warehouse_title: str
     product_id: int
     article_number: str
     product_name: str
