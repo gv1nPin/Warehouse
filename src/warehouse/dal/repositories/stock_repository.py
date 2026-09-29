@@ -16,7 +16,7 @@ class StockRepository(BaseRepository[StockOnWarehouse]):
 
     model = StockOnWarehouse
 
-    def _select(self, warehouse_id: int, for_update: bool = False):
+    def _select(self, warehouse_id: int | None = None, for_update: bool = False):
         stmt = (
             select(StockOnWarehouse)
             .join(StockOnWarehouse.product)
