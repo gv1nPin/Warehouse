@@ -92,10 +92,16 @@ def home_view(request):
 @business_errors_as_http
 @logged
 def stock_view(request):
-    """Остатки склада сотрудника с поиском по артикулу и названию."""
+    """Остатки склада сотрудника (у администратора — всех складов) с поиском."""
     query = request.GET.get('q', '').strip()
+    is_admin = PermissionName.EMPLOYEE_MANAGE in request.actor.permissions
     rows = stock_service().list_stock(request.actor.employee_id)
     if query:
         needle = query.casefold()
-        rows = [r for r in rows if needle in r.article_number.casefold() or needle in r.product_name.casefold()]
-    return render(request, 'web/home/stock.html', {'rows': rows, 'q': query})
+        rows = [
+            r for r in rows
+            if needle in r.article_number.casefold()
+            or needle in r.product_name.casefold()
+            or (is_admin and needle in r.warehouse_title.casefold())
+        ]
+    return render(request, 'web/home/stock.html', {'rows': rows, 'q': query, 'is_admin': is_admin})

@@ -10,7 +10,7 @@
     <div class="head">
       <div>
         <h1>Остатки</h1>
-        <p class="muted" style="margin:4px 0 0">{{ warehouse_title }}. Доступно = на складе − в резерве.</p>
+        <p class="muted" style="margin:4px 0 0">{% if is_admin %}Все склады{% else %}{{ warehouse_title }}{% endif %}. Доступно = на складе − в резерве.</p>
       </div>
       <form method="get" action="{% url 'stock' %}">
         <input class="input" name="q" value="{{ q }}" placeholder="Артикул или название" style="max-width:280px" aria-label="Поиск товара">
@@ -23,6 +23,9 @@
         <thead><tr><th>Артикул</th><th>Товар</th><th>Ед.</th><th class="r">На складе</th><th class="r">В резерве</th><th class="r">Доступно</th></tr></thead>
         <tbody>
           {% for r in rows %}
+          {% if is_admin %}{% ifchanged r.warehouse_id %}
+          <tr><td colspan="6" class="label" style="padding-top:16px"><b>{{ r.warehouse_title }}</b></td></tr>
+          {% endifchanged %}{% endif %}
           <tr>
             <td class="art">{{ r.article_number }}</td>
             <td>{{ r.product_name }}</td>
