@@ -25,9 +25,14 @@ class StockQueryService(AbstractStockQueryService):
         self._uow_factory = uow_factory
         self._access = access
 
-    def list_stock(self, employee_id: int) -> list[StockItemDTO]:
-        with self._uow_factory() as uow:
-            actor = self._access.get_actor(uow, employee_id)
-            if not actor.permissions & STOCK_PERMISSIONS:
-                raise AccessDeniedError("Остатки видят только сотрудники склада")
-            return uow.stock.list_by_warehouse(actor.employee.warehouse_id)
+def list_stock(self, employee_id: int) -> list[StockItemDTO]:
+    with self._uow_factory() as uow:
+        actor = self._access.get_actor(uow, employee_id)
+
+        # Администратор — суперпользователь: видит остатки всех складов.
+        if self._access.is_admin(actor):
+            return uow.stock.list_all()
+
+        if not actor.permissions & STOCK_PERMISSIONS:
+            raise AccessDeniedError("Остатки видят только сотрудники склада")
+        return uow.stock.list_by_warehouse(actor.employee.warehouse_id)
