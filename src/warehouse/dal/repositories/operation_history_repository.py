@@ -4,6 +4,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
+from warehouse.common.log_details_formatter import LogDetailsFormatter
 from warehouse.common.dto import OperationHistoryDTO
 from warehouse.common.mappers import to_operation
 from warehouse.dal.entities import OperationHistory
@@ -84,12 +85,21 @@ class HistoryRepository(BaseRepository[OperationHistory]):
         details: dict[str, Any] | None = None,
     ) -> None:
         """Пишет запись в текущую транзакцию: откат операции откатит и запись."""
+        
+        # Причесываем details перед вставкой в алхимию
+        try:
+            formatted_details = LogDetailsFormatter.format(operation_type, details)
+        except Exception:
+            # Предохранитель: пишем сырой details, чтобы транзакция не упала
+            formatted_details = details
+
         self.session.add(
             OperationHistory(
                 employee_id=employee_id,
                 operation_type=operation_type,
                 entity_name=entity_name,
                 entity_id=entity_id,
-                details=details,
+                details=formatted_details,  # log_details_formatter
             )
         )
+
