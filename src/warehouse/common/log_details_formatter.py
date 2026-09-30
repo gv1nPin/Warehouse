@@ -16,6 +16,15 @@ class LogDetailsFormatter:
         return handler(details)
 
     @classmethod
+    def _format_employee_register(cls, details: dict[str, Any]) -> dict[str, Any]:
+        """Причесываем логи регистрации нового сотрудника/пользователя."""
+        return {
+            "login": str(details.get("login", "")).strip(),
+            "role_id": cls._to_int_or_none(details.get("role_id")),
+            "warehouse_id": cls._to_int_or_none(details.get("warehouse_id") or details.get("warehouse")),
+        }
+
+    @classmethod
     def _format_driver_assign(cls, details: dict[str, Any]) -> dict[str, Any]:
         """Причесываем логи назначения водителя на этап."""
         return {

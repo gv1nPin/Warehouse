@@ -101,6 +101,60 @@ def as_json(details: dict | None) -> str:
     return json.dumps(details, ensure_ascii=False) if details else ''
 
 
+@register.filter
+def format_details(details: dict | None, operation_type: str) -> str:
+    """Превращает структурированный JSON деталей операции в красивую строку для человека."""
+    if not details:
+        return ""
+
+    try:
+        # Водитель
+        if operation_type == OperationType.DRIVER_ASSIGN:
+            action = "Переназначен" if details.get("action_type") == "reassigned" else "Назначен"
+            driver = f"водитель №{details['driver_id']}" if details.get("driver_id") else "водитель снят"
+            return f"{action}: {driver}"
+
+        # Регистрация сотрудника
+        if operation_type == OperationType.EMPLOYEE_REGISTER:
+            wh_id = details.get('warehouse_id') or details.get('warehouse')
+            warehouse_str = f" на склад №{wh_id}" if wh_id else ""
+            return f"Зарегистрирован пользователь «{details.get('login')}» (Роль №{details.get('role_id')}){warehouse_str}"
+
+
+        # Создание черновика
+        if operation_type == OperationType.SHIPMENT_CREATE:
+            route_str = " → ".join(str(w_id) for w_id in details.get("route", []))
+            return (
+                f"Маршрут: {route_str} | Дата: {details.get('planned_date')} | "
+                f"Позиций: {details.get('total_items', 0)} | Документов: {details.get('documents_count', 0)}"
+            )
+
+        # Товар добавлен
+        if operation_type == OperationType.ITEM_ADD:
+            mode = "с заменой количества" if details.get("is_replaced") else "новая позиция"
+            return f"Товар №{details.get('product_id')} | Кол-во: {details.get('quantity')} ({mode})"
+
+        # Резерв
+        if operation_type == OperationType.STAGE_RESERVE:
+            # Считаем количество зарезервированных позиций в списке items
+            items_count = len(details.get("items", [])) if isinstance(details.get("items"), list) else 0
+            return f"Зарезервировано позиций: {items_count}"
+
+        # Документ прикреплён
+        if operation_type == OperationType.DOCUMENT_ATTACH:
+            return f"Прикреплён файл «{details.get('file_name')}» (ID документа: {details.get('document_id')})"
+
+        # Документ откреплён
+        if operation_type == OperationType.DOCUMENT_REMOVE:
+            return f"Откреплён файл «{details.get('file_name')}»"
+
+    except Exception:
+        pass
+
+    return ", ".join(f"{k}: {value}" for k, value in details.items() if not k.startswith("_"))
+
+
+
 @register.simple_tag
 def status_pill(status_name: str) -> str:
     """Готовая плашка статуса."""
