@@ -7,7 +7,6 @@ class WarehouseDTO:
     id: int
     title: str
     address: str
-    timezone: str
 
 
 @dataclass(frozen=True, slots=True)
