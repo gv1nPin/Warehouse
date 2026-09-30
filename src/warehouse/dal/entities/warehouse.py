@@ -17,6 +17,6 @@ class Warehouse(Base):
     title: Mapped[str] = mapped_column(Text)
     address: Mapped[str] = mapped_column(Text)
     is_deleted: Mapped[bool] = mapped_column(default=False, server_default=false())
-
+    timezone: Mapped[str] = mapped_column(Text, default="Europe/Moscow", server_default="Europe/Moscow")
     employees: Mapped[list["Employee"]] = relationship(back_populates="warehouse")
     stock: Mapped[list["StockOnWarehouse"]] = relationship(back_populates="warehouse")

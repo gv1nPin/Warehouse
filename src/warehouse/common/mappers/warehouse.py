@@ -3,7 +3,7 @@ from warehouse.dal.entities import StockOnWarehouse, Warehouse
 
 
 def to_warehouse(w: Warehouse) -> WarehouseDTO:
-    return WarehouseDTO(id=w.id, title=w.title, address=w.address)
+    return WarehouseDTO(id=w.id, title=w.title, address=w.address, timezone=w.timezone)
 
 
 def to_stock_item(s: StockOnWarehouse) -> StockItemDTO:
