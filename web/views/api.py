@@ -60,6 +60,7 @@ class CreateDraftView(View):
             planned_date = date.fromisoformat(body.get("planned_date", ""))
             items = [NewStageItem(product_id=int(i["product_id"]), quantity=i["quantity"]) for i in body.get("items", [])]
             route = [int(warehouse_id) for warehouse_id in body.get("route", [])]
+            client_timezone = str(body.get("client_timezone", "UTC"))
         except (KeyError, TypeError, ValueError):
             raise ValidationError("Неверная дата, маршрут или список товаров") from None
 
@@ -67,6 +68,7 @@ class CreateDraftView(View):
             employee_id=request.actor.employee_id,
             planned_date=planned_date,
             route=route,
+            client_timezone = client_timezone,
             items=items,
             driver_id=body.get("driver_id"),
         )
