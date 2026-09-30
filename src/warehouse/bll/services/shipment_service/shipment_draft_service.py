@@ -1,7 +1,8 @@
 import logging
 from collections.abc import Callable, Sequence
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
+from zoneinfo import ZoneInfo
 
 from warehouse.common.dto import (
     EmployeeDTO,
@@ -110,14 +111,23 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
             if len(route) < 2:
                 raise ValidationError("В маршруте должно быть минимум два склада")
             self._access.require_warehouse(actor, route[0])
-            if planned_date < date.today():
-                raise ValidationError("Плановая дата не может быть в прошлом")
             for from_id, to_id in zip(route, route[1:]):
                 if from_id == to_id:
                     raise ValidationError("Соседние склады маршрута не должны совпадать")
+            departure_warehouse = None
             for warehouse_id in set(route):
-                if uow.warehouses.get_by_id(warehouse_id) is None:
+                wh = uow.warehouses.get_by_id(warehouse_id)
+                if wh is None:
                     raise NotFoundError(f"Склад №{warehouse_id} не найден")
+            if warehouse_id == route[0]:
+                    departure_warehouse = wh
+            try:
+                warehouse_tz = ZoneInfo(departure_warehouse.timezone)
+            except Exception:
+                warehouse_tz = ZoneInfo("UTC")
+            today_at_warehouse = datetime.now(warehouse_tz).date()
+            if planned_date < today_at_warehouse:
+                raise ValidationError("Плановая дата не может быть в прошлом")
 
             if len({i.product_id for i in items}) != len(items):
                 raise ValidationError("Один товар добавлен в этап дважды")
