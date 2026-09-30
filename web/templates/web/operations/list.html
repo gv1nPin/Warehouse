@@ -64,7 +64,7 @@
             <td class="num">{{ op.created_at|date:"d.m.Y H:i:s" }}</td>
             <td>{{ op.employee_name }} <span class="muted">#{{ op.employee_id }}</span></td>
             <td>{{ op.operation_type|operation_label }}</td>
-            <td class="muted journal-details">{{ op.details|format_details:op.operation_type }}</td>
+            <td><span class="num">{{ op.details|format_details:op.operation_type }}</span></td>
             <td>{{ op.entity_name }}{% if op.entity_id %} <span class="art">#{{ op.entity_id }}</span>{% endif %}</td>
           </tr>
           {% empty %}
