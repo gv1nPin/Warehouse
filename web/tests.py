@@ -173,7 +173,7 @@ class LoginTests(WebTestCase):
 class RegisterTests(WebTestCase):
     form = {
         'last_name': 'Сидоров', 'first_name': 'Пётр', 'login': 'sidorov',
-        'password': 'password1', 'password_repeat': 'password1', 'warehouse_id': '1', 'role_id': '6',
+        'password': 'password1', 'warehouse_id': '1', 'role_id': '6',
     }
 
     def test_admin_registers_employee(self):
@@ -184,11 +184,12 @@ class RegisterTests(WebTestCase):
         new = self.employees.register.call_args.args[1]
         self.assertEqual((new.login, new.warehouse_id, new.role_id), ('sidorov', 1, 6))
 
-    def test_passwords_must_match(self):
+    def test_form_error_keeps_input(self):
         self.sign_in()
-        page = self.client.post(reverse('employee_new'), {**self.form, 'password_repeat': 'other'})
-        self.assertContains(page, 'Пароли не совпадают')
+        page = self.client.post(reverse('employee_new'), {**self.form, 'password': ''})
+        self.assertContains(page, 'Обязательное поле')
         self.assertContains(page, 'value="sidorov"')
+        self.assertNotContains(page, 'Повтор пароля')
         self.employees.register.assert_not_called()
 
     def test_service_error_is_shown_over_form(self):

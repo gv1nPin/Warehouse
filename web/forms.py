@@ -10,7 +10,6 @@ class RegisterForm(forms.Form):
     first_name = forms.CharField(label='Имя', max_length=100)
     login = forms.CharField(label='Логин', max_length=100)
     password = forms.CharField(label='Пароль', widget=forms.PasswordInput(render_value=False))
-    password_repeat = forms.CharField(label='Повтор пароля', widget=forms.PasswordInput(render_value=False))
     warehouse_id = forms.TypedChoiceField(label='Склад', coerce=int)
     role_id = forms.TypedChoiceField(label='Роль', coerce=int)
 
@@ -19,16 +18,9 @@ class RegisterForm(forms.Form):
         self.fields['warehouse_id'].choices = [(w.id, w.title) for w in warehouses]
         self.fields['role_id'].choices = [(r.id, r.name) for r in roles]
         self.fields['login'].widget.attrs['autocomplete'] = 'off'
-        for name in ('password', 'password_repeat'):
-            self.fields[name].widget.attrs['autocomplete'] = 'new-password'
+        self.fields['password'].widget.attrs['autocomplete'] = 'new-password'
         for field in self.fields.values():
             field.widget.attrs['class'] = 'input'
-
-    def clean(self):
-        data = super().clean()
-        if data.get('password') and data.get('password') != data.get('password_repeat'):
-            self.add_error('password_repeat', 'Пароли не совпадают')
-        return data
 
     def to_new_employee(self) -> NewEmployee:
         data = self.cleaned_data
