@@ -15,6 +15,7 @@ from ..controller_logging import logged
 from ..errors import business_errors_as_http
 from ..services import history_service
 from ..templatetags.warehouse_tags import as_json, operation_label
+from ..templatetags.warehouse_tags import format_details
 
 PAGE_SIZE = 50
 EXPORT_PAGE = 500
@@ -68,7 +69,7 @@ def _workbook(operations) -> bytes:
             op.operation_type,
             op.entity_name,
             op.entity_id,
-            as_json(op.details),
+            format_details(op.op.details, op.operation_type),
         ])
     buffer = BytesIO()
     book.save(buffer)

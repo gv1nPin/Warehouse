@@ -65,7 +65,7 @@
             <td>{{ op.employee_name }} <span class="muted">#{{ op.employee_id }}</span></td>
             <td>{{ op.operation_type|operation_label }}</td>
             <td>{{ op.entity_name }}{% if op.entity_id %} <span class="art">#{{ op.entity_id }}</span>{% endif %}</td>
-            <td class="muted journal-details">{{ op.details|as_json }}</td>
+            <td class="muted journal-details">{{ op.details|format_details:op.operation_type }}</td>
           </tr>
           {% empty %}
           <tr><td colspan="6" class="empty">Записей нет</td></tr>
