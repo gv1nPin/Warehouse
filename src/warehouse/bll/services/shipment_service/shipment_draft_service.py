@@ -119,7 +119,7 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
                 wh = uow.warehouses.get_by_id(warehouse_id)
                 if wh is None:
                     raise NotFoundError(f"Склад №{warehouse_id} не найден")
-            if warehouse_id == route[0]:
+                if warehouse_id == route[0]:
                     departure_warehouse = wh
             try:
                 warehouse_tz = ZoneInfo(departure_warehouse.timezone)
