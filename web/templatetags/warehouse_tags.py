@@ -169,6 +169,19 @@ def format_details(details: dict | None, operation_type: str) -> str:
         if operation_type == OperationType.DOCUMENT_REMOVE:
             return f"Откреплён файл «{details.get('file_name')}»"
 
+        #Ввод факта
+        if operation_type == OperationType.FACT_ENTER:
+            actual = details.get("actual_quantity")
+            doc_qty = details.get("document_quantity")
+            comment = f" | Комментарий: {details.get('comment')}" if details.get("comment") and details.get("comment") != "None" else ""
+            return f"Товар №{details.get('product_id')} (Этап №{details.get('stage_id')}) | Принято: {actual} шт. из {doc_qty} шт.{comment}"
+
+        # Приёмка
+        if operation_type == OperationType.STAGE_ACCEPT:
+            discrepancies = details.get("discrepancies", [])
+            has_discr = f"Обнаружено расхождений: {len(discrepancies)} поз." if discrepancies else "Без расхождений"
+            return f"Перевозка №{details.get('shipment_id')} принята на складе №{details.get('warehouse_id')} | Статус: Принято ({has_discr})"
+
     except Exception:
         pass
 

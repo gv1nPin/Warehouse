@@ -90,6 +90,37 @@ class LogDetailsFormatter:
             "items": cleaned_items
         }
 
+    @classmethod
+    def _format_fact_enter(cls, details: dict[str, Any]) -> dict[str, Any]:
+        """Причесываем логи ввода фактического количества товара."""
+        return {
+            "stage_id": cls._to_int_or_none(details.get("stage_id")),
+            "product_id": cls._to_int_or_none(details.get("product_id")),
+            "actual_quantity": str(details.get("actual_quantity")),
+            "document_quantity": str(details.get("document_quantity")),
+            "comment": str(details.get("comment")) if details.get("comment") and details.get("comment") != "None" else None
+        }
+
+    #Приёмка
+    @classmethod
+    def _format_stage_accept(cls, details: dict[str, Any]) -> dict[str, Any]:
+        """Причесываем логи окончательной приёмки этапа перевозки."""
+        raw_discr = details.get("discrepancies", [])
+        cleaned_discr = []
+        
+        if isinstance(raw_discr, list):
+            for d in raw_discr:
+                cleaned_discr.append({
+                    "product_id": cls._to_int_or_none(d.get("product_id")),
+                    "discrepancy_quantity": str(d.get("discrepancy_quantity"))
+                })
+                
+        return {
+            "shipment_id": cls._to_int_or_none(details.get("shipment_id")),
+            "warehouse_id": cls._to_int_or_none(details.get("warehouse_id")),
+            "status": str(details.get("status", "Received")),
+            "discrepancies": cleaned_discr
+        }
 
     # Приведения типов
     @staticmethod
