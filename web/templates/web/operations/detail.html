@@ -14,7 +14,6 @@
     <dl class="journal-card">
       <div><dt>Сотрудник</dt><dd>{{ op.employee_name }} <span class="art">#{{ op.employee_id }}</span></dd></div>
       <div><dt>Операция</dt><dd>{{ op.operation_type|operation_label }} <span class="art">{{ op.operation_type }}</span></dd></div>
-      <div><dt>Сущность</dt><dd>{{ op.entity_name }}{% if op.entity_id %} <span class="art">#{{ op.entity_id }}</span>{% endif %}</dd></div>
       <div><dt>Детали</dt><dd>{% if details %}<pre class="journal-json">{{ details }}</pre>{% else %}<span class="muted">—</span>{% endif %}</dd></div>
     </dl>
   </div>

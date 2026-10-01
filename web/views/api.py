@@ -68,7 +68,7 @@ class CreateDraftView(View):
             employee_id=request.actor.employee_id,
             planned_date=planned_date,
             route=route,
-            client_timezone = client_timezone,
+            client_timezone=client_timezone,
             items=items,
             driver_id=body.get("driver_id"),
         )

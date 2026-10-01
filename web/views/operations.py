@@ -14,15 +14,24 @@ from ..auth import employee_required
 from ..controller_logging import logged
 from ..errors import business_errors_as_http
 from ..services import history_service
-from ..templatetags.warehouse_tags import as_json, operation_label
+from ..templatetags.warehouse_tags import operation_label, format_details  # Изменили импорт на format_details
 
 PAGE_SIZE = 50
 EXPORT_PAGE = 500
 EXPORT_LIMIT = 5000
 FILTER_FIELDS = ('employee_id', 'operation_type', 'entity_name', 'entity_id', 'since', 'until')
+
+# ИСПРАВЛЕНИЕ: Меняем местами Операцию и Сотрудника в заголовках Excel
 EXPORT_COLUMNS = (
-    ('№', 8), ('Время', 20), ('ID сотрудника', 14), ('Сотрудник', 28), ('Операция', 24),
-    ('Код операции', 22), ('Сущность', 16), ('ID сущности', 12), ('Детали', 60),
+    ('№', 8), 
+    ('Время', 20), 
+    ('Операция', 24),      # <-- На 3-е место
+    ('Код операции', 22), # <-- На 4-е место
+    ('ID сотрудника', 14), # <-- Сдвинули вправо
+    ('Сотрудник', 28),     # <-- Сдвинули вправо
+    ('Сущность', 16), 
+    ('ID сущности', 12), 
+    ('Детали', 60),
 )
 
 
@@ -58,18 +67,20 @@ def _workbook(operations) -> bytes:
     for column, (_, width) in enumerate(EXPORT_COLUMNS, start=1):
         sheet.cell(1, column).font = Font(bold=True)
         sheet.column_dimensions[get_column_letter(column)].width = width
+        
     for op in operations:
         sheet.append([
             op.id,
             timezone.localtime(op.created_at).strftime('%d.%m.%Y %H:%M:%S'),
-            op.employee_id,
-            op.employee_name,
-            operation_label(op.operation_type),
-            op.operation_type,
-            op.entity_name,
-            op.entity_id,
-            as_json(op.details),
+            operation_label(op.operation_type),  # 3. Название операции
+            op.operation_type,                   # 4. Код операции
+            op.employee_id,                      # 5. ID сотрудника
+            op.employee_name,                    # 6. Имя сотрудника
+            op.entity_name,                      # 7. Имя сущности
+            op.entity_id,                        # 8. ID сущности
+            format_details(op.details, op.operation_type), # 9. Причесанные детали
         ])
+        
     buffer = BytesIO()
     book.save(buffer)
     return buffer.getvalue()
@@ -84,6 +95,7 @@ def operations_list_view(request):
     raw, filters = journal_filters(request)
     raw_page = request.GET.get('page', '')
     page = int(raw_page) if raw_page.isdigit() and int(raw_page) > 0 else 1
+    
     service = history_service()
     employee_id = request.actor.employee_id
     operations = service.list_operations(
@@ -99,6 +111,7 @@ def operations_list_view(request):
         'has_next': len(operations) > PAGE_SIZE,
         'query': params.urlencode(),
     })
+
 
 
 @require_GET
