@@ -140,6 +140,27 @@ def format_details(details: dict | None, operation_type: str) -> str:
             items_count = len(details.get("items", [])) if isinstance(details.get("items"), list) else 0
             return f"Зарезервировано позиций: {items_count}"
 
+        # Отправка
+        if operation_type == OperationType.STAGE_SHIP:
+            items_list = details.get("items", [])
+            positions_count = len(items_list) if isinstance(items_list, list) else 0
+            
+            total_qty = 0
+            if isinstance(items_list, list):
+                for item in items_list:
+                    try:
+                        total_qty += float(item.get("quantity", 0))
+                    except (ValueError, TypeError):
+                        pass
+            
+            total_qty_str = f"{total_qty:g}" if total_qty % 1 != 0 else f"{int(total_qty)}"
+            return (
+                f"Перевозка №{details.get('shipment_id')} | "
+                f"Со склада №{details.get('from_warehouse_id')} на склад №{details.get('to_warehouse_id')} | "
+                f"Отправлено: {positions_count} поз. ({total_qty_str} шт.)"
+            )
+
+
         # Документ прикреплён
         if operation_type == OperationType.DOCUMENT_ATTACH:
             return f"Прикреплён файл «{details.get('file_name')}» (ID документа: {details.get('document_id')})"

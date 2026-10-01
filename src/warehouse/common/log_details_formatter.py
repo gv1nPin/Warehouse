@@ -70,6 +70,27 @@ class LogDetailsFormatter:
                 cleaned[key] = value
         return cleaned
 
+    @classmethod
+    def _format_stage_ship(cls, details: dict[str, Any]) -> dict[str, Any]:
+        """Причесываем логи фактической отправки этапа перевозки со склада."""
+        raw_items = details.get("items", [])
+        cleaned_items = []
+        
+        if isinstance(raw_items, list):
+            for item in raw_items:
+                cleaned_items.append({
+                    "product_id": cls._to_int_or_none(item.get("product_id")),
+                    "quantity": str(item.get("quantity"))
+                })
+                
+        return {
+            "shipment_id": cls._to_int_or_none(details.get("shipment_id")),
+            "from_warehouse_id": cls._to_int_or_none(details.get("from_warehouse_id")),
+            "to_warehouse_id": cls._to_int_or_none(details.get("to_warehouse_id")),
+            "items": cleaned_items
+        }
+
+
     # Приведения типов
     @staticmethod
     def _to_int_or_none(value: Any) -> int | None:
