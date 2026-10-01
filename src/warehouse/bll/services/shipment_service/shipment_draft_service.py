@@ -93,8 +93,7 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
         self,
         employee_id: int,
         planned_date: date,
-        route: Sequence[int],
-        client_timezone: str,
+        route: Sequence[int],  # Убрали client_timezone из аргументов функции
         items: Sequence[NewStageItem] = (),
         driver_id: int | None = None,
         documents: Sequence[NewStageDocument] = (),
@@ -115,6 +114,7 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
             for from_id, to_id in zip(route, route[1:]):
                 if from_id == to_id:
                     raise ValidationError("Соседние склады маршрута не должны совпадать")
+            
             departure_warehouse = None
             for warehouse_id in set(route):
                 wh = uow.warehouses.get_by_id(warehouse_id)
@@ -122,10 +122,13 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
                     raise NotFoundError(f"Склад №{warehouse_id} не найден")
                 if warehouse_id == route[0]:
                     departure_warehouse = wh
+
+            # ПРАВИЛЬНО: Вычисляем время на основе проверенной таймзоны склада из БД
             try:
-                warehouse_tz = ZoneInfo(client_timezone)
+                warehouse_tz = ZoneInfo(departure_warehouse.timezone)
             except Exception:
                 warehouse_tz = ZoneInfo("UTC")
+
             today_at_warehouse = datetime.now(warehouse_tz).date()
             if planned_date < today_at_warehouse:
                 raise ValidationError("Плановая дата не может быть в прошлом")
