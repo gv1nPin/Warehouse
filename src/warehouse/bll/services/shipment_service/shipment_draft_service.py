@@ -94,6 +94,7 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
         employee_id: int,
         planned_date: date,
         route: Sequence[int],
+        client_timezone: str,
         items: Sequence[NewStageItem] = (),
         driver_id: int | None = None,
         documents: Sequence[NewStageDocument] = (),
@@ -122,7 +123,7 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
                 if warehouse_id == route[0]:
                     departure_warehouse = wh
             try:
-                warehouse_tz = ZoneInfo(departure_warehouse.timezone)
+                warehouse_tz = ZoneInfo(client_timezone)
             except Exception:
                 warehouse_tz = ZoneInfo("UTC")
             today_at_warehouse = datetime.now(warehouse_tz).date()
