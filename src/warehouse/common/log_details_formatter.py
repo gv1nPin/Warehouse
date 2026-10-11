@@ -11,7 +11,7 @@ class LogDetailsFormatter:
             return None
         
         # Динамически ищем метод форматирования, например: DRIVER_ASSIGN -> _format_driver_assign
-        method_name = f"_format_{operation_type.lower()}"
+        method_name = f"_format_{operation_type.lower().replace('.', '_')}"
         handler = getattr(cls, method_name, cls._format_default)
         return handler(details)
 

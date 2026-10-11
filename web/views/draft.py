@@ -117,10 +117,11 @@ def draft_create_view(request):
         for f in files:
             documents.append(save_stage_file(f))
         shipment = draft_service().create_draft(
-            request.actor.employee_id,
-            planned_date,
-            route,
-            items,
+            employee_id=request.actor.employee_id,
+            planned_date=planned_date,
+            route=route,
+            client_timezone=timezone.get_current_timezone_name(),  # Получаем имя текущей таймзоны
+            items=items,
             driver_id=_driver_id(form['driver_id']),
             documents=documents,
         )
