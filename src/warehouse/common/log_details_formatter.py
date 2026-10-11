@@ -2,6 +2,9 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
 
+from .constants import OperationType
+
+
 class LogDetailsFormatter:
     """Централизованный трансформер для словарей details в журнале операций."""
 
@@ -10,9 +13,17 @@ class LogDetailsFormatter:
         if details is None:
             return None
         
-        # Динамически ищем метод форматирования, например: DRIVER_ASSIGN -> _format_driver_assign
-        method_name = f"_format_{operation_type.lower().replace('.', '_')}"
-        handler = getattr(cls, method_name, cls._format_default)
+        # Явная таблица «операция -> обработчик»
+        handlers = {
+            OperationType.EMPLOYEE_REGISTER: cls._format_employee_register,
+            OperationType.SHIPMENT_CREATE: cls._format_shipment_create,
+            OperationType.ITEM_ADD: cls._format_item_add,
+            OperationType.DRIVER_ASSIGN: cls._format_driver_assign,
+            OperationType.STAGE_SHIP: cls._format_stage_ship,
+            OperationType.FACT_ENTER: cls._format_fact_enter,
+            OperationType.STAGE_ACCEPT: cls._format_stage_accept,
+        }
+        handler = handlers.get(operation_type, cls._format_default)
         return handler(details)
 
     @classmethod

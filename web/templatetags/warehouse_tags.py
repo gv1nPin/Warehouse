@@ -110,7 +110,9 @@ def format_details(details: dict | None, operation_type: str) -> str:
     try:
         # Водитель
         if operation_type == OperationType.DRIVER_ASSIGN:
-            action = "Переназначен" if details.get("action_type") == "reassigned" else "Назначен"
+            # Записи до исправления форматтера хранят только previous_driver_id.
+            reassigned = details.get("action_type") == "reassigned" or details.get("previous_driver_id")
+            action = "Переназначен" if reassigned else "Назначен"
             driver = f"водитель №{details['driver_id']}" if details.get("driver_id") else "водитель снят"
             return f"{action}: {driver}"
 
@@ -131,7 +133,9 @@ def format_details(details: dict | None, operation_type: str) -> str:
 
         # Товар добавлен
         if operation_type == OperationType.ITEM_ADD:
-            mode = "с заменой количества" if details.get("is_replaced") else "новая позиция"
+            # Старые записи хранят флаг под именем replaced.
+            replaced = details.get("is_replaced") or details.get("replaced")
+            mode = "с заменой количества" if replaced else "новая позиция"
             return f"Товар №{details.get('product_id')} | Кол-во: {details.get('quantity')} ({mode})"
 
         # Резерв
