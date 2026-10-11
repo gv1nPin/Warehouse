@@ -5,17 +5,9 @@ from warehouse.bll.interfaces.auth_service import AbstractAccessService, ActorDT
 from warehouse.bll.interfaces.shipment_service.abstract_route_query_service import (
     AbstractRouteQueryService,
 )
-from warehouse.common import PermissionName, StatusName
+from warehouse.common import ACTIVE_STATUSES, PermissionName, StatusName
 from warehouse.common.exceptions import AccessDeniedError, NotFoundError
 from warehouse.dal.unit_of_work import UnitOfWork
-
-# Маршрут ещё в работе: его пока не приняли.
-ACTIVE_STATUSES = (
-    StatusName.DRAFT,
-    StatusName.WAITING,
-    StatusName.RESERVED,
-    StatusName.SHIPPED,
-)
 
 # Кто видит все маршруты своего склада, а не только свои рейсы.
 WAREHOUSE_PERMISSIONS = frozenset(

@@ -19,7 +19,15 @@ from warehouse.bll.interfaces.auth_service import AbstractAccessService
 from warehouse.bll.interfaces.shipment_service.abstract_shipment_draft_service import (
     AbstractShipmentDraftService,
 )
-from warehouse.common import EntityName, OperationType, PermissionName, RoleName, StatusName
+from warehouse.common import (
+    ACTIVE_STATUSES,
+    NOT_SHIPPED_STATUSES,
+    EntityName,
+    OperationType,
+    PermissionName,
+    RoleName,
+    StatusName,
+)
 from warehouse.common.exceptions import (
     InvalidStatusError,
     NotFoundError,
@@ -28,17 +36,6 @@ from warehouse.common.exceptions import (
 from warehouse.dal.unit_of_work import UnitOfWork
 
 from ._sender_guards import SenderGuardsMixin
-
-# Этап ещё не принят — его видно в «Исходящих».
-ACTIVE_STATUSES = (
-    StatusName.DRAFT,
-    StatusName.WAITING,
-    StatusName.RESERVED,
-    StatusName.SHIPPED,
-)
-
-# Пока груз не уехал, водителя можно менять.
-NOT_SHIPPED_STATUSES = (StatusName.DRAFT, StatusName.WAITING, StatusName.RESERVED)
 
 
 class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):

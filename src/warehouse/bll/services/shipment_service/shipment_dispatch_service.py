@@ -8,13 +8,17 @@ from warehouse.bll.interfaces.auth_service import AbstractAccessService
 from warehouse.bll.interfaces.shipment_service.abstract_shipment_dispatch_service import (
     AbstractShipmentDispatchService,
 )
-from warehouse.common import EntityName, OperationType, PermissionName, StatusName
+from warehouse.common import (
+    NOT_SHIPPED_STATUSES,
+    EntityName,
+    OperationType,
+    PermissionName,
+    StatusName,
+)
 from warehouse.common.exceptions import InvalidStatusError, NotFoundError, ValidationError
 from warehouse.dal.unit_of_work import UnitOfWork
 
 from ._sender_guards import SenderGuardsMixin
-
-CANCELLABLE_STATUSES = (StatusName.DRAFT, StatusName.WAITING, StatusName.RESERVED)
 
 
 class ShipmentDispatchService(SenderGuardsMixin, AbstractShipmentDispatchService):
@@ -90,7 +94,7 @@ class ShipmentDispatchService(SenderGuardsMixin, AbstractShipmentDispatchService
             self._access.require_permission(actor, PermissionName.SHIPMENT_CANCEL)
 
             shipment = self._shipment(uow, shipment_id)
-            cancellable = self._status_ids(uow, CANCELLABLE_STATUSES)
+            cancellable = self._status_ids(uow, NOT_SHIPPED_STATUSES)
             if shipment.status_id not in cancellable or any(
                 stage.status_id not in cancellable for stage in shipment.stages
             ):

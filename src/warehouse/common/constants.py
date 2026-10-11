@@ -43,6 +43,24 @@ class StatusName(StrEnum):
     CANCELLED = "Отменено (Cancelled)"
 
 
+# Наборы статусов, которые нужны сразу нескольким сервисам: единый источник правды.
+
+# Этап или перевозка ещё не приняты — их видно в «Исходящих».
+ACTIVE_STATUSES = (
+    StatusName.DRAFT,
+    StatusName.WAITING,
+    StatusName.RESERVED,
+    StatusName.SHIPPED,
+)
+
+# Груз ещё не уехал: пока так, водителя можно менять, а перевозку отменять.
+NOT_SHIPPED_STATUSES = (
+    StatusName.DRAFT,
+    StatusName.WAITING,
+    StatusName.RESERVED,
+)
+
+
 class OperationType(StrEnum):
     """operation_history.operation_type: что сделал сотрудник."""
 
