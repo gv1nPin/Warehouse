@@ -49,15 +49,15 @@ class ShipmentTransitCoordinator(AbstractShipmentTransitCoordinator):
         self._fill_next_stage(uow, next_stage.id, moving)
         self._reserve(uow, transit_warehouse_id, moving)
 
-        uow.stages.set_status(next_stage.id, self._status_id(uow, StatusName.RESERVED))
+        uow.stages.set_status(next_stage.id, uow.statuses.require_id(StatusName.RESERVED))
         uow.shipments.set_status(
-            stage.shipment_id, self._status_id(uow, StatusName.IN_TRANSIT_WH)
+            stage.shipment_id, uow.statuses.require_id(StatusName.IN_TRANSIT_WH)
         )
 
     def _close_remaining_stages(self, uow: UnitOfWork, stage: StageDTO) -> None:
         """Закрывает все этапы после текущего вместе с перевозкой: везти
         дальше нечего, маршрут дальше не едет."""
-        cancelled_id = self._status_id(uow, StatusName.CANCELLED)
+        cancelled_id = uow.statuses.require_id(StatusName.CANCELLED)
 
         for rest in uow.stages.list_by_shipment(stage.shipment_id):
             if rest.stage_order > stage.stage_order:
@@ -127,17 +127,10 @@ class ShipmentTransitCoordinator(AbstractShipmentTransitCoordinator):
 
         Расхождение хотя бы на одном этапе делает такой всю перевозку.
         """
-        discrepancy_id = self._status_id(uow, StatusName.DISCREPANCY)
+        discrepancy_id = uow.statuses.require_id(StatusName.DISCREPANCY)
         has_discrepancies = uow.stages.any_with_status(stage.shipment_id, [discrepancy_id])
 
         final_status_id = (
-            discrepancy_id if has_discrepancies else self._status_id(uow, StatusName.RECEIVED)
+            discrepancy_id if has_discrepancies else uow.statuses.require_id(StatusName.RECEIVED)
         )
         uow.shipments.set_status(stage.shipment_id, final_status_id)
-
-    @staticmethod
-    def _status_id(uow: UnitOfWork, status_name: StatusName) -> int:
-        status_id = uow.statuses.get_id(status_name)
-        if status_id is None:
-            raise NotFoundError(f"В справочнике нет статуса «{status_name}»")
-        return status_id

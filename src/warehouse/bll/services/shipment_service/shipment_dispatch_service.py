@@ -64,7 +64,7 @@ class ShipmentDispatchService(SenderGuardsMixin, AbstractShipmentDispatchService
                     reserved_delta=item.document_quantity,
                 )
 
-            reserved_id = self._status_id(uow, StatusName.RESERVED)
+            reserved_id = uow.statuses.require_id(StatusName.RESERVED)
             uow.stages.set_status(stage_id, reserved_id)
             uow.shipments.set_status(stage.shipment_id, reserved_id)
             uow.history.log_operation(
@@ -103,12 +103,12 @@ class ShipmentDispatchService(SenderGuardsMixin, AbstractShipmentDispatchService
                     f"пока груз не отправлен"
                 )
 
-            reserved_id = self._status_id(uow, StatusName.RESERVED)
+            reserved_id = uow.statuses.require_id(StatusName.RESERVED)
             for stage in shipment.stages:
                 if stage.status_id == reserved_id:
                     self._release_reserve(uow, stage)
 
-            cancelled_id = self._status_id(uow, StatusName.CANCELLED)
+            cancelled_id = uow.statuses.require_id(StatusName.CANCELLED)
             for stage in shipment.stages:
                 uow.stages.set_status(stage.id, cancelled_id)
             uow.shipments.set_status(shipment_id, cancelled_id)
@@ -157,7 +157,7 @@ class ShipmentDispatchService(SenderGuardsMixin, AbstractShipmentDispatchService
                     reserved_delta=-item.document_quantity,
                 )
 
-            shipped_id = self._status_id(uow, StatusName.SHIPPED)
+            shipped_id = uow.statuses.require_id(StatusName.SHIPPED)
             uow.stages.set_status(stage_id, shipped_id, sent_at=datetime.now(timezone.utc))
             uow.shipments.set_status(stage.shipment_id, shipped_id)
             uow.history.log_operation(

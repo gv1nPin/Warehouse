@@ -64,18 +64,11 @@ class SenderGuardsMixin:
         return stage
 
     def _require_status(self, uow: UnitOfWork, stage: StageDTO, status: StatusName) -> None:
-        if stage.status_id != self._status_id(uow, status):
+        if stage.status_id != uow.statuses.require_id(status):
             raise InvalidStatusError(
                 f"Этап в статусе «{stage.status_name}»: действие доступно "
                 f"только в статусе «{status}»"
             )
-
-    @staticmethod
-    def _status_id(uow: UnitOfWork, status_name: StatusName) -> int:
-        status_id = uow.statuses.get_id(status_name)
-        if status_id is None:
-            raise NotFoundError(f"В справочнике нет статуса «{status_name}»")
-        return status_id
 
     @staticmethod
     def _status_ids(uow: UnitOfWork, names: Collection[StatusName]) -> list[int]:

@@ -46,7 +46,7 @@ class ShipmentReceiptService(AbstractShipmentReceiptService):
             actor = self._receiver(uow, employee_id)
             return uow.stages.list_incoming(
                 warehouse_id=actor.employee.warehouse_id,
-                status_ids=[self._status_id(uow, StatusName.SHIPPED)],
+                status_ids=[uow.statuses.require_id(StatusName.SHIPPED)],
                 with_items=True,
             )
 
@@ -113,7 +113,7 @@ class ShipmentReceiptService(AbstractShipmentReceiptService):
             # этапов решает, чем закончилась вся перевозка.
             uow.stages.set_status(
                 stage_id,
-                self._status_id(uow, final_status),
+                uow.statuses.require_id(final_status),
                 received_at=datetime.now(timezone.utc),
                 acceptor_id=actor.employee.id,
             )
@@ -195,7 +195,7 @@ class ShipmentReceiptService(AbstractShipmentReceiptService):
         return stage
 
     def _require_shipped(self, uow: UnitOfWork, stage: StageDTO) -> None:
-        if stage.status_id != self._status_id(uow, StatusName.SHIPPED):
+        if stage.status_id != uow.statuses.require_id(StatusName.SHIPPED):
             raise InvalidStatusError(
                 f"Этап в статусе «{stage.status_name}»: "
                 f"работать можно только с отправленным грузом"
@@ -217,10 +217,3 @@ class ShipmentReceiptService(AbstractShipmentReceiptService):
         if not value.is_finite() or value < 0:
             raise ValidationError("Количество не может быть отрицательным")
         return value
-
-    @staticmethod
-    def _status_id(uow: UnitOfWork, status_name: StatusName) -> int:
-        status_id = uow.statuses.get_id(status_name)
-        if status_id is None:
-            raise NotFoundError(f"В справочнике нет статуса «{status_name}»")
-        return status_id

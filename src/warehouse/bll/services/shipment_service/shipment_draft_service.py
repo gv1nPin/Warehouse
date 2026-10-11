@@ -143,13 +143,13 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
                 for order, (from_id, to_id) in enumerate(zip(route, route[1:]))
             ]
 
-            draft_id = self._status_id(uow, StatusName.DRAFT)
+            draft_id = uow.statuses.require_id(StatusName.DRAFT)
             shipment_id = uow.shipments.create(
                 creator_id=actor.employee.id,
                 planned_date=planned_date,
                 status_id=draft_id,
                 stages=stages,
-                stage_status_id=self._status_id(uow, StatusName.WAITING),
+                stage_status_id=uow.statuses.require_id(StatusName.WAITING),
                 first_stage_status_id=draft_id,
             )
             first_stage = uow.stages.get_by_order(shipment_id, stage_order=1)
@@ -256,7 +256,7 @@ class ShipmentDraftService(SenderGuardsMixin, AbstractShipmentDraftService):
                 raise NotFoundError(f"Перевозка №{shipment_id} не найдена")
 
             self._access.require_warehouse(actor, shipment.stages[0].from_warehouse.id)
-            if shipment.status_id != self._status_id(uow, StatusName.DRAFT):
+            if shipment.status_id != uow.statuses.require_id(StatusName.DRAFT):
                 raise InvalidStatusError(
                     f"Перевозка в статусе «{shipment.status_name}»: удалить можно только черновик"
                 )
