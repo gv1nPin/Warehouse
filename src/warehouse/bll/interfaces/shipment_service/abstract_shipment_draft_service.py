@@ -62,6 +62,7 @@ class AbstractShipmentDraftService(ABC):
         employee_id: int,
         planned_date: date,
         route: Sequence[int],
+        client_timezone: str,
         items: Sequence[NewStageItem] = (),
         driver_id: int | None = None,
         documents: Sequence[NewStageDocument] = (),
